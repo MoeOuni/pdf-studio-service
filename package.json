@@ -18,7 +18,13 @@
     "build": "tsc",
     "build:functions": "tsc infrastructure/functions.ts --outDir infrastructure --target es2020 --module commonjs --esModuleInterop --skipLibCheck --resolveJsonModule",
     "typecheck": "tsc --noEmit",
-    "package": "npm run build:functions && serverless package"
+    "package": "npm run build:functions && serverless package",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:studio": "prisma studio",
+    "db:seed": "ts-node prisma/seed.ts"
   },
   "dependencies": {
     "@aws-sdk/client-cognito-identity-provider": "^3.490.0",
@@ -32,6 +38,8 @@
     "@middy/http-json-body-parser": "^4.7.0",
     "@middy/http-security-headers": "^4.7.0",
     "@middy/validator": "^4.7.0",
+    "@prisma/client": "^5.8.1",
+    "bcrypt": "^5.1.1",
     "http-status-codes": "^2.3.0",
     "nanoid": "^5.0.4",
     "pdf-lib": "^1.17.1",
@@ -40,6 +48,7 @@
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.131",
+    "@types/bcrypt": "^5.0.2",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.10.6",
     "@types/qrcode": "^1.5.5",
@@ -48,6 +57,7 @@
     "eslint": "^8.56.0",
     "jest": "^29.7.0",
     "js-yaml": "^4.1.0",
+    "prisma": "^5.8.1",
     "serverless": "^3.38.0",
     "serverless-dynamodb": "^0.2.47",
     "serverless-esbuild": "^1.50.0",

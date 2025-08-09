@@ -18,7 +18,17 @@ provider:
   environment:
     STAGE: ${self:provider.stage}
     REGION: ${self:provider.region}
+    
+    # DynamoDB
     DYNAMODB_TABLE: ${self:service}-${self:provider.stage}
+    
+    # PostgreSQL (RDS)
+    DATABASE_URL: ${self:custom.databaseUrl.${self:provider.stage}}
+    DB_NAME: ${self:custom.database.name}
+    DB_USER: ${self:custom.database.username}
+    DB_PASSWORD: ${self:custom.database.password}
+    
+    # S3
     S3_BUCKET: ${self:service}-files-${self:provider.stage}
     
   # Global function defaults
@@ -47,6 +57,18 @@ plugins:
 
 # Custom configuration
 custom:
+  # Database configuration per stage
+  database:
+    name: pdf_studio_${self:provider.stage}
+    username: pdf_studio_user
+    password: ${env:DB_PASSWORD, 'changeme123!'}
+    
+  # Database configuration per stage
+  databaseUrl:
+    dev: postgresql://${self:custom.database.username}:${self:custom.database.password}@localhost:5432/${self:custom.database.name}?schema=public
+    staging: postgresql://${self:custom.database.username}:${self:custom.database.password}@!GetAtt PostgreSQLInstance.Endpoint.Address:5432/${self:custom.database.name}?schema=public
+    prod: postgresql://${self:custom.database.username}:${self:custom.database.password}@!GetAtt PostgreSQLInstance.Endpoint.Address:5432/${self:custom.database.name}?schema=public
+  
   # ESBuild configuration for TypeScript compilation
   esbuild:
     bundle: true
@@ -82,6 +104,9 @@ functions: ${file(infrastructure/functions.js)}
 
 # Import resources from separate files
 resources:
+  # PostgreSQL RDS
+  - ${file(infrastructure/resources/rds.yml)}
+  
   # DynamoDB resources
   - ${file(infrastructure/resources/dynamodb.yml)}
   

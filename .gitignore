@@ -3,3 +3,5 @@ node_modules
 
 # Compiled functions configuration (generated from TypeScript)
 infrastructure/functions.js
+
+dist

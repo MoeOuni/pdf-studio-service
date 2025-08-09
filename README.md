@@ -5,7 +5,7 @@ A modern, serverless PDF template management system built with AWS Lambda, Dynam
 ## 🏗️ **Project Structure**
 
 ```
-pdf-studio-serverless/psf-studio-service/
+pdf-studio-serverless/pdf-studio-service/
 ├── src/
 │   ├── functions/                    # Lambda functions organized by domain
 │   │   ├── auth/                     # Authentication functions
