@@ -1,0 +1,89 @@
+# "org" ensures this Service is used with the correct Serverless Framework Access Key.
+org: ounitek
+# "app" enables Serverless Framework Dashboard features and sharing them with other Services.
+app: pdf-studio-service
+# "service" is the name of this project. This will also be added to your AWS resource names.
+service: pdf-studio-api
+
+frameworkVersion: '3'
+
+# Provider configuration
+provider:
+  name: aws
+  runtime: nodejs20.x
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:region, 'us-east-1'}
+  
+  # Global environment variables
+  environment:
+    STAGE: ${self:provider.stage}
+    REGION: ${self:provider.region}
+    DYNAMODB_TABLE: ${self:service}-${self:provider.stage}
+    S3_BUCKET: ${self:service}-files-${self:provider.stage}
+    
+  # Global function defaults
+  timeout: 30
+  memorySize: 256
+  
+  # Tracing and monitoring
+  tracing:
+    lambda: true
+    apiGateway: true
+    
+  # Logs retention
+  logs:
+    httpApi: true
+    
+  # IAM permissions - imported from separate file
+  iam:
+    role:
+      statements: ${file(infrastructure/iam/lambda-execution-role.yml):iamRoleStatements}
+
+# Plugins
+plugins:
+  - serverless-esbuild
+  - serverless-offline
+  - serverless-dynamodb
+
+# Custom configuration
+custom:
+  # ESBuild configuration for TypeScript compilation
+  esbuild:
+    bundle: true
+    minify: false
+    sourcemap: true
+    exclude: ['aws-sdk']
+    target: 'node20'
+    define:
+      'require.resolve': undefined
+    platform: 'node'
+    concurrency: 10
+    
+  # Serverless offline configuration for local development
+  serverless-offline:
+    httpPort: 3000
+    babelOptions:
+      presets: ["env"]
+    printOutput: true
+    
+  # DynamoDB local configuration
+  dynamodb:
+    start:
+      port: 8000
+      inMemory: true
+      migrate: true
+    stages:
+      - dev
+
+# Functions - imported from modular configurations
+# Individual function configurations are maintained in their respective module folders
+# The functions.js file is compiled from functions.ts with full TypeScript support
+functions: ${file(infrastructure/functions.js)}
+
+# Import resources from separate files
+resources:
+  # DynamoDB resources
+  - ${file(infrastructure/resources/dynamodb.yml)}
+  
+  # S3 resources
+  - ${file(infrastructure/resources/s3.yml)}

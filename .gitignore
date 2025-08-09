@@ -1,0 +1,5 @@
+node_modules
+.serverless
+
+# Compiled functions configuration (generated from TypeScript)
+infrastructure/functions.js

@@ -1,0 +1,41 @@
+# Field Management Functions
+functions:
+  createField:
+    handler: src/functions/fields/create.main
+    description: "Create a new field in a template"
+    events:
+      - httpApi:
+          path: /fields
+          method: post
+    environment:
+      FUNCTION_NAME: createField
+      
+  getField:
+    handler: src/functions/fields/get.main
+    description: "Get a specific field by ID"
+    events:
+      - httpApi:
+          path: /fields/{id}
+          method: get
+    environment:
+      FUNCTION_NAME: getField
+      
+  updateField:
+    handler: src/functions/fields/update.main
+    description: "Update an existing field"
+    events:
+      - httpApi:
+          path: /fields/{id}
+          method: put
+    environment:
+      FUNCTION_NAME: updateField
+      
+  deleteField:
+    handler: src/functions/fields/delete.main
+    description: "Delete a field"
+    events:
+      - httpApi:
+          path: /fields/{id}
+          method: delete
+    environment:
+      FUNCTION_NAME: deleteField

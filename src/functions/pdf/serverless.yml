@@ -1,0 +1,26 @@
+# PDF Generation Functions
+functions:
+  generatePdf:
+    handler: src/functions/pdf/generate.main
+    description: "Generate filled PDF from template and data"
+    timeout: 60
+    memorySize: 1024
+    events:
+      - httpApi:
+          path: /pdf/generate
+          method: post
+    environment:
+      FUNCTION_NAME: generatePdf
+      
+  # Future: Batch PDF generation
+  # batchGeneratePdf:
+  #   handler: src/functions/pdf/batch-generate.main
+  #   description: "Generate multiple PDFs in batch"
+  #   timeout: 300
+  #   memorySize: 2048
+  #   events:
+  #     - httpApi:
+  #         path: /pdf/batch-generate
+  #         method: post
+  #   environment:
+  #     FUNCTION_NAME: batchGeneratePdf

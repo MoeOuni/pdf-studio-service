@@ -1,0 +1,33 @@
+# File Management Functions
+functions:
+  uploadFile:
+    handler: src/functions/files/upload.main
+    description: "Upload PDF files to S3"
+    timeout: 30
+    memorySize: 512
+    events:
+      - httpApi:
+          path: /files/upload
+          method: post
+    environment:
+      FUNCTION_NAME: uploadFile
+      
+  getFile:
+    handler: src/functions/files/get.main
+    description: "Get a file by ID or generate download URL"
+    events:
+      - httpApi:
+          path: /files/{fileId}
+          method: get
+    environment:
+      FUNCTION_NAME: getFile
+      
+  deleteFile:
+    handler: src/functions/files/delete.main
+    description: "Delete a file from S3"
+    events:
+      - httpApi:
+          path: /files/{filename}
+          method: delete
+    environment:
+      FUNCTION_NAME: deleteFile

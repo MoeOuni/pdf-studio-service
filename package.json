@@ -1,0 +1,72 @@
+{
+  "name": "pdf-studio-serverless-api",
+  "version": "1.0.0",
+  "description": "PDF Studio Serverless API with AWS Lambda, DynamoDB, and S3",
+  "main": "handler.js",
+  "scripts": {
+    "dev": "npm run build:functions && serverless offline",
+    "deploy": "npm run build:functions && serverless deploy",
+    "deploy:dev": "npm run build:functions && serverless deploy --stage dev",
+    "deploy:prod": "npm run build:functions && serverless deploy --stage prod",
+    "remove": "serverless remove",
+    "logs": "serverless logs -f",
+    "info": "serverless info",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "lint": "eslint src/**/*.ts infrastructure/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts infrastructure/**/*.ts --fix",
+    "build": "tsc",
+    "build:functions": "tsc infrastructure/functions.ts --outDir infrastructure --target es2020 --module commonjs --esModuleInterop --skipLibCheck --resolveJsonModule",
+    "typecheck": "tsc --noEmit",
+    "package": "npm run build:functions && serverless package"
+  },
+  "dependencies": {
+    "@aws-sdk/client-cognito-identity-provider": "^3.490.0",
+    "@aws-sdk/client-dynamodb": "^3.490.0",
+    "@aws-sdk/client-s3": "^3.490.0",
+    "@aws-sdk/lib-dynamodb": "^3.490.0",
+    "@aws-sdk/s3-request-presigner": "^3.490.0",
+    "@middy/core": "^4.7.0",
+    "@middy/http-cors": "^4.7.0",
+    "@middy/http-error-handler": "^4.7.0",
+    "@middy/http-json-body-parser": "^4.7.0",
+    "@middy/http-security-headers": "^4.7.0",
+    "@middy/validator": "^4.7.0",
+    "http-status-codes": "^2.3.0",
+    "nanoid": "^5.0.4",
+    "pdf-lib": "^1.17.1",
+    "qrcode": "^1.5.4",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.131",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^20.10.6",
+    "@types/qrcode": "^1.5.5",
+    "@typescript-eslint/eslint-plugin": "^6.17.0",
+    "@typescript-eslint/parser": "^6.17.0",
+    "eslint": "^8.56.0",
+    "jest": "^29.7.0",
+    "js-yaml": "^4.1.0",
+    "serverless": "^3.38.0",
+    "serverless-dynamodb": "^0.2.47",
+    "serverless-esbuild": "^1.50.0",
+    "serverless-offline": "^13.3.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "keywords": [
+    "serverless",
+    "aws",
+    "lambda",
+    "dynamodb",
+    "s3",
+    "pdf",
+    "typescript"
+  ],
+  "author": "MOE@PSFTEK",
+  "license": "MIT"
+}

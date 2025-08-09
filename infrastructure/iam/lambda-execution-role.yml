@@ -1,0 +1,48 @@
+# Lambda execution role with necessary permissions
+iamRoleStatements:
+  # DynamoDB permissions
+  - Effect: Allow
+    Action:
+      - dynamodb:Query
+      - dynamodb:Scan
+      - dynamodb:GetItem
+      - dynamodb:PutItem
+      - dynamodb:UpdateItem
+      - dynamodb:DeleteItem
+      - dynamodb:BatchGetItem
+      - dynamodb:BatchWriteItem
+    Resource:
+      - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}"
+      - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}/index/*"
+  
+  # S3 permissions
+  - Effect: Allow
+    Action:
+      - s3:GetObject
+      - s3:PutObject
+      - s3:DeleteObject
+      - s3:GetObjectVersion
+    Resource:
+      - "arn:aws:s3:::${self:provider.environment.S3_BUCKET}/*"
+  
+  - Effect: Allow
+    Action:
+      - s3:ListBucket
+    Resource:
+      - "arn:aws:s3:::${self:provider.environment.S3_BUCKET}"
+  
+  # CloudWatch Logs permissions (automatically added by Serverless, but explicit for clarity)
+  - Effect: Allow
+    Action:
+      - logs:CreateLogGroup
+      - logs:CreateLogStream
+      - logs:PutLogEvents
+    Resource:
+      - "arn:aws:logs:${self:provider.region}:*:log-group:/aws/lambda/*"
+  
+  # X-Ray permissions for tracing
+  - Effect: Allow
+    Action:
+      - xray:PutTraceSegments
+      - xray:PutTelemetryRecords
+    Resource: "*"

@@ -1,0 +1,89 @@
+# S3 Bucket Configuration
+Resources:
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: ${self:provider.environment.S3_BUCKET}
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders:
+              - "*"
+            AllowedMethods:
+              - GET
+              - PUT
+              - POST
+              - DELETE
+              - HEAD
+            AllowedOrigins:
+              - "*"
+            MaxAge: 3000
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteTempFiles
+            Status: Enabled
+            Prefix: temp/
+            ExpirationInDays: 1
+          - Id: TransitionToIA
+            Status: Enabled
+            Prefix: users/
+            Transitions:
+              - TransitionInDays: 30
+                StorageClass: STANDARD_IA
+              - TransitionInDays: 90
+                StorageClass: GLACIER
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      NotificationConfiguration:
+        CloudWatchConfigurations:
+          - Event: s3:ObjectCreated:*
+            CloudWatchConfiguration:
+              LogGroupName: !Sub "/aws/s3/${self:provider.environment.S3_BUCKET}"
+      Tags:
+        - Key: Environment
+          Value: ${self:provider.stage}
+        - Key: Service
+          Value: ${self:service}
+        - Key: Component
+          Value: Storage
+
+  # S3 Bucket Policy for secure access
+  S3BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref S3Bucket
+      PolicyDocument:
+        Statement:
+          - Sid: DenyInsecureConnections
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - !Sub "${S3Bucket}/*"
+              - !Ref S3Bucket
+            Condition:
+              Bool:
+                "aws:SecureTransport": "false"
+
+Outputs:
+  S3BucketName:
+    Description: "S3 Bucket Name"
+    Value: ${self:provider.environment.S3_BUCKET}
+    Export:
+      Name: ${self:service}-${self:provider.stage}-S3Bucket
+      
+  S3BucketArn:
+    Description: "S3 Bucket ARN"
+    Value: !GetAtt S3Bucket.Arn
+    Export:
+      Name: ${self:service}-${self:provider.stage}-S3BucketArn
+      
+  S3BucketDomainName:
+    Description: "S3 Bucket Domain Name"
+    Value: !GetAtt S3Bucket.DomainName
+    Export:
+      Name: ${self:service}-${self:provider.stage}-S3BucketDomainName
