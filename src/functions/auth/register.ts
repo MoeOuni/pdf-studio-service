@@ -1,7 +1,9 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
-import { baseMiddleware, loggingMiddleware } from '@/shared/middleware';
-import { createSuccessResponse, createValidationErrorResponse } from '@/shared/utils/response';
+import { baseMiddleware } from '@/shared/middleware';
+import { createSuccessResponse, createValidationErrorResponse, createConflictResponse } from '@/shared/utils/response';
 import { validateRequestBody, registerSchema } from '@/shared/utils/validation';
+import { UsersRepository } from '@/shared/database/prisma/users-repository';
+import { generateTokens } from '@/shared/auth/jwt';
 
 /**
  * User registration endpoint
@@ -16,26 +18,55 @@ const registerHandler = async (
     return createValidationErrorResponse(validation.error);
   }
 
-  const { email, password: _password, name } = validation.data;
+  const { email, password, name } = validation.data;
 
-  // TODO: Implement actual registration logic with password hashing
-  // For now, return mock response
-  const mockUser = {
-    id: 'user-456',
-    email,
-    name: name || 'New User',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
+  try {
+    const usersRepo = new UsersRepository();
+    
+    // Check if user already exists
+    const existingUser = await usersRepo.findByEmail(email);
+    if (existingUser) {
+      return createConflictResponse('User with this email already exists');
+    }
 
-  const mockToken = 'mock-jwt-token';
+    // Create user with profile
+    const user = await usersRepo.create({
+      email,
+      password,
+      name,
+    });
 
-  return createSuccessResponse({
-    user: mockUser,
-    token: mockToken,
-  }, 'Registration successful');
+    // Generate JWT tokens
+    const tokens = await generateTokens({
+      userId: user.id,
+      email: user.email,
+      name: user.name,
+    });
+
+    // Prepare response data (exclude sensitive information)
+    const responseData = {
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        emailVerified: user.emailVerified,
+        createdAt: user.createdAt,
+        profile: user.profile ? {
+          company: user.profile.company,
+          timezone: user.profile.timezone,
+          language: user.profile.language,
+          preferences: user.profile.preferences,
+        } : null,
+      },
+      tokens,
+    };
+
+    return createSuccessResponse(responseData, 'User registered successfully');
+  } catch (error) {
+    console.error('Registration error:', error);
+    throw error;
+  }
 };
 
 // Export the handler with middleware
-export const main = baseMiddleware(registerHandler)
-  .use(loggingMiddleware);
+export const main = baseMiddleware(registerHandler);

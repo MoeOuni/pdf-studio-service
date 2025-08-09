@@ -3,7 +3,7 @@ functions:
   generatePdf:
     handler: src/functions/pdf/generate.main
     description: "Generate filled PDF from template and data"
-    timeout: 60
+    timeout: 29
     memorySize: 1024
     events:
       - httpApi:

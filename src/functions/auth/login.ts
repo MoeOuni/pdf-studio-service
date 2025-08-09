@@ -1,7 +1,10 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
-import { baseMiddleware, loggingMiddleware } from '@/shared/middleware';
-import { createSuccessResponse, createValidationErrorResponse } from '@/shared/utils/response';
+import { baseMiddleware } from '@/shared/middleware';
+import { createSuccessResponse, createValidationErrorResponse, createNotFoundResponse, createUnauthorizedResponse } from '@/shared/utils/response';
 import { validateRequestBody, loginSchema } from '@/shared/utils/validation';
+import { UsersRepository } from '@/shared/database/prisma/users-repository';
+import { generateTokens } from '@/shared/auth/jwt';
+import bcrypt from 'bcrypt';
 
 /**
  * User login endpoint
@@ -16,26 +19,59 @@ const loginHandler = async (
     return createValidationErrorResponse(validation.error);
   }
 
-  const { email, password: _password } = validation.data;
+  const { email, password } = validation.data;
 
-  // TODO: Implement actual authentication logic with password validation
-  // For now, return mock response
-  const mockUser = {
-    id: 'user-123',
-    email,
-    name: 'Test User',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
+  try {
+    const usersRepo = new UsersRepository();
+    
+    // Find user by email
+    const user = await usersRepo.findByEmail(email);
+    if (!user) {
+      return createNotFoundResponse('User');
+    }
 
-  const mockToken = 'mock-jwt-token';
+    // Check if user is active
+    if (user.status !== 'ACTIVE') {
+      return createUnauthorizedResponse('Account is not active');
+    }
 
-  return createSuccessResponse({
-    user: mockUser,
-    token: mockToken,
-  }, 'Login successful');
+    // Verify password
+    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+    if (!isPasswordValid) {
+      return createUnauthorizedResponse('Invalid credentials');
+    }
+
+    // Generate JWT tokens
+    const tokens = await generateTokens({
+      userId: user.id,
+      email: user.email,
+      name: user.name,
+    });
+
+    // Prepare response data (exclude sensitive information)
+    const responseData = {
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        emailVerified: user.emailVerified,
+        createdAt: user.createdAt,
+        profile: user.profile ? {
+          company: user.profile.company,
+          timezone: user.profile.timezone,
+          language: user.profile.language,
+          preferences: user.profile.preferences,
+        } : null,
+      },
+      tokens,
+    };
+
+    return createSuccessResponse(responseData, 'Login successful');
+  } catch (error) {
+    console.error('Login error:', error);
+    throw error;
+  }
 };
 
 // Export the handler with middleware
-export const main = baseMiddleware(loginHandler)
-  .use(loggingMiddleware);
+export const main = baseMiddleware(loginHandler);

@@ -3,6 +3,8 @@ functions:
   createTemplate:
     handler: src/functions/templates/create.main
     description: "Create a new PDF template"
+    timeout: 30
+    memorySize: 256
     events:
       - httpApi:
           path: /templates
@@ -13,9 +15,11 @@ functions:
   getTemplate:
     handler: src/functions/templates/get.main
     description: "Get a specific template by ID"
+    timeout: 30
+    memorySize: 256
     events:
       - httpApi:
-          path: /templates/{id}
+          path: /templates/{templateId}
           method: get
     environment:
       FUNCTION_NAME: getTemplate
@@ -23,6 +27,8 @@ functions:
   listTemplates:
     handler: src/functions/templates/list.main
     description: "List all templates for a user"
+    timeout: 30
+    memorySize: 256
     events:
       - httpApi:
           path: /templates
@@ -33,9 +39,11 @@ functions:
   updateTemplate:
     handler: src/functions/templates/update.main
     description: "Update an existing template"
+    timeout: 30
+    memorySize: 256
     events:
       - httpApi:
-          path: /templates/{id}
+          path: /templates/{templateId}
           method: put
     environment:
       FUNCTION_NAME: updateTemplate
@@ -43,9 +51,11 @@ functions:
   deleteTemplate:
     handler: src/functions/templates/delete.main
     description: "Delete a template"
+    timeout: 30
+    memorySize: 256
     events:
       - httpApi:
-          path: /templates/{id}
+          path: /templates/{templateId}
           method: delete
     environment:
       FUNCTION_NAME: deleteTemplate

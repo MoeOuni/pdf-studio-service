@@ -84,60 +84,102 @@ export const registerSchema = z.object({
   name: z.string().min(1, 'Name is required').optional(),
 });
 
+// File upload schemas
+export const uploadRequestSchema = z.object({
+  fileName: z.string().min(1, 'File name is required'),
+  fileSize: z.number().min(1, 'File size must be positive'),
+  mimeType: z.string().min(1, 'MIME type is required'),
+});
+
+export const confirmUploadSchema = z.object({
+  fileId: uuidSchema,
+});
+
 // Template schemas
 export const createTemplateSchema = z.object({
-  name: z.string().min(1, 'Template name is required'),
-  fileName: z.string().min(1, 'File name is required'),
-  pdfFileUrl: z.string().url('Invalid PDF file URL'),
-  pageCount: z.number().int().min(1, 'Page count must be at least 1'),
-  dimensions: dimensionsSchema,
-  scale: z.number().min(0.1).max(5).default(1),
+  name: z.string().min(1, 'Template name is required').max(100, 'Template name too long'),
+  description: z.string().max(500, 'Description too long').optional(),
+  originalFileId: uuidSchema,
+  dimensions: z.object({
+    width: z.number().min(1, 'Width must be positive'),
+    height: z.number().min(1, 'Height must be positive'),
+  }),
+  pageCount: z.number().min(1, 'Page count must be at least 1'),
+  thumbnailUrl: z.string().url('Invalid thumbnail URL').optional(),
+  isPublic: z.boolean().optional(),
+  tags: z.array(z.string().min(1, 'Tag cannot be empty')).max(10, 'Too many tags').optional(),
+  metadata: z.record(z.any()).optional(),
 });
 
 export const updateTemplateSchema = z.object({
-  name: z.string().min(1, 'Template name is required').optional(),
-  dimensions: dimensionsSchema.optional(),
-  scale: z.number().min(0.1).max(5).optional(),
+  name: z.string().min(1, 'Template name is required').max(100, 'Template name too long').optional(),
+  description: z.string().max(500, 'Description too long').optional(),
+  isPublic: z.boolean().optional(),
+  tags: z.array(z.string().min(1, 'Tag cannot be empty')).max(10, 'Too many tags').optional(),
+  thumbnailUrl: z.string().url('Invalid thumbnail URL').optional(),
+  metadata: z.record(z.any()).optional(),
 });
 
 // Field schemas
 export const createFieldSchema = z.object({
   templateId: uuidSchema,
-  name: z.string().min(1, 'Field name is required'),
+  name: z.string().min(1, 'Field name is required').max(50, 'Field name too long'),
   type: fieldTypeSchema,
-  page: z.number().int().min(1, 'Page number must be at least 1'),
+  page: z.number().min(1, 'Page must be at least 1'),
   position: positionSchema,
   size: sizeSchema,
-  bindingKey: z.string().min(1, 'Binding key is required'),
-  value: z.string().optional(),
-  style: fieldStyleSchema.optional(),
-  layout: fieldLayoutSchema.optional(),
-  advanced: fieldAdvancedSchema.optional(),
-  validation: fieldValidationSchema.optional(),
-  text: z.string().optional(),
-  tableConfig: z.any().optional(),
+  style: fieldStyleSchema,
+  validation: z.object({
+    required: z.boolean().optional(),
+    minLength: z.number().min(0).optional(),
+    maxLength: z.number().min(1).optional(),
+    pattern: z.string().optional(),
+    min: z.number().optional(),
+    max: z.number().optional(),
+    customMessage: z.string().max(200, 'Custom message too long').optional(),
+  }).optional(),
+  defaultValue: z.string().max(1000, 'Default value too long').optional(),
+  placeholder: z.string().max(100, 'Placeholder too long').optional(),
+  isRequired: z.boolean().optional(),
+  isReadonly: z.boolean().optional(),
+  order: z.number().min(0).optional(),
 });
 
 export const updateFieldSchema = z.object({
-  name: z.string().min(1, 'Field name is required').optional(),
+  name: z.string().min(1, 'Field name is required').max(50, 'Field name too long').optional(),
   type: fieldTypeSchema.optional(),
-  page: z.number().int().min(1, 'Page number must be at least 1').optional(),
+  page: z.number().min(1, 'Page must be at least 1').optional(),
   position: positionSchema.optional(),
   size: sizeSchema.optional(),
-  bindingKey: z.string().min(1, 'Binding key is required').optional(),
-  value: z.string().optional(),
   style: fieldStyleSchema.optional(),
-  layout: fieldLayoutSchema.optional(),
-  advanced: fieldAdvancedSchema.optional(),
-  validation: fieldValidationSchema.optional(),
-  text: z.string().optional(),
-  tableConfig: z.any().optional(),
+  validation: z.object({
+    required: z.boolean().optional(),
+    minLength: z.number().min(0).optional(),
+    maxLength: z.number().min(1).optional(),
+    pattern: z.string().optional(),
+    min: z.number().optional(),
+    max: z.number().optional(),
+    customMessage: z.string().max(200, 'Custom message too long').optional(),
+  }).optional(),
+  defaultValue: z.string().max(1000, 'Default value too long').optional(),
+  placeholder: z.string().max(100, 'Placeholder too long').optional(),
+  isRequired: z.boolean().optional(),
+  isReadonly: z.boolean().optional(),
+  order: z.number().min(0).optional(),
 });
 
-// PDF generation schema
+export const updateFieldsOrderSchema = z.object({
+  fieldOrders: z.array(z.object({
+    id: uuidSchema,
+    order: z.number().min(0),
+  })).min(1, 'At least one field order is required'),
+});
+
+// PDF generation schemas
 export const generatePdfSchema = z.object({
   templateId: uuidSchema,
-  payload: z.record(z.any()),
+  fieldValues: z.record(z.string(), z.any()),
+  outputFormat: z.enum(['pdf', 'png', 'jpeg']).default('pdf'),
 });
 
 /**

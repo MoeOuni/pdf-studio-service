@@ -12,10 +12,8 @@ iamRoleStatements:
       - dynamodb:BatchGetItem
       - dynamodb:BatchWriteItem
     Resource:
-      - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:service}-templates-${self:provider.stage}"
-      - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:service}-templates-${self:provider.stage}/index/*"
-      - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:service}-fields-${self:provider.stage}"
-      - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:service}-fields-${self:provider.stage}/index/*"
+      - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}"
+      - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}/index/*"
   
   # S3 permissions
   - Effect: Allow

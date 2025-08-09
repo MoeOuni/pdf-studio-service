@@ -94,6 +94,19 @@ export function createUnauthorizedResponse(
 }
 
 /**
+ * Create a conflict error response
+ */
+export function createConflictResponse(
+  message: string = 'Resource already exists'
+): APIGatewayProxyResult {
+  return createErrorResponse(
+    'Conflict',
+    message,
+    StatusCodes.CONFLICT
+  );
+}
+
+/**
  * Create an internal server error response
  */
 export function createInternalServerErrorResponse(

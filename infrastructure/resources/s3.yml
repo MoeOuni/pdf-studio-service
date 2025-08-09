@@ -38,16 +38,13 @@ Resources:
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
-      NotificationConfiguration:
-        CloudWatchConfigurations:
-          - Event: s3:ObjectCreated:*
-            CloudWatchConfiguration:
-              LogGroupName: !Sub "/aws/s3/${self:provider.environment.S3_BUCKET}"
       Tags:
         - Key: Environment
           Value: ${self:provider.stage}
         - Key: Service
           Value: ${self:service}
+        - Key: Component
+          Value: Storage
         - Key: Component
           Value: Storage
 
@@ -63,8 +60,8 @@ Resources:
             Principal: "*"
             Action: "s3:*"
             Resource:
-              - !Sub "${S3Bucket}/*"
-              - !Ref S3Bucket
+              - !Sub "arn:aws:s3:::${S3Bucket}/*"
+              - !Sub "arn:aws:s3:::${S3Bucket}"
             Condition:
               Bool:
                 "aws:SecureTransport": "false"

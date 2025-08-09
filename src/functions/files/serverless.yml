@@ -1,16 +1,40 @@
 # File Management Functions
 functions:
-  uploadFile:
-    handler: src/functions/files/upload.main
-    description: "Upload PDF files to S3"
+  generateUploadUrl:
+    handler: src/functions/files/generate-url.main
+    description: "Generate presigned URL for file upload"
     timeout: 30
-    memorySize: 512
+    memorySize: 256
     events:
       - httpApi:
-          path: /files/upload
+          path: /files/upload-url
           method: post
     environment:
-      FUNCTION_NAME: uploadFile
+      FUNCTION_NAME: generateUploadUrl
+      
+  confirmUpload:
+    handler: src/functions/files/confirm.main
+    description: "Confirm file upload completion"
+    timeout: 30
+    memorySize: 256
+    events:
+      - httpApi:
+          path: /files/confirm-upload
+          method: post
+    environment:
+      FUNCTION_NAME: confirmUpload
+      
+  listFiles:
+    handler: src/functions/files/list.main
+    description: "List user's uploaded files"
+    timeout: 30
+    memorySize: 256
+    events:
+      - httpApi:
+          path: /files
+          method: get
+    environment:
+      FUNCTION_NAME: listFiles
       
   getFile:
     handler: src/functions/files/get.main
@@ -27,7 +51,7 @@ functions:
     description: "Delete a file from S3"
     events:
       - httpApi:
-          path: /files/{filename}
+          path: /files/{fileId}
           method: delete
     environment:
       FUNCTION_NAME: deleteFile

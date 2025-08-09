@@ -1,15 +1,70 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
-import { baseMiddleware, loggingMiddleware, authMiddleware } from '@/shared/middleware';
-import { createSuccessResponse } from '@/shared/utils/response';
+import { baseMiddleware } from '@/shared/middleware';
+import { authMiddleware } from '@/shared/auth/middleware';
+import { createSuccessResponse, createValidationErrorResponse, createNotFoundResponse } from '@/shared/utils/response';
+import { validateRequestBody, createTemplateSchema } from '@/shared/utils/validation';
+import { TemplatesRepository } from '@/shared/database/dynamodb/templates-repository';
+import { UploadedFilesRepository } from '@/shared/database/prisma/uploaded-files-repository';
 
+/**
+ * Create a new PDF template
+ */
 const createTemplateHandler = async (
-  _event: APIGatewayProxyEvent,
-  _context: Context
+  event: APIGatewayProxyEvent,
+  context: Context
 ): Promise<APIGatewayProxyResult> => {
-  // TODO: Implement template creation logic
-  return createSuccessResponse({ message: 'Template creation - Coming soon' });
+  // Get authenticated user from context (added by authMiddleware)
+  const user = (context as any).user;
+
+  // Validate request body
+  const validation = validateRequestBody(event.body, createTemplateSchema);
+  if (!validation.success) {
+    return createValidationErrorResponse(validation.error);
+  }
+
+  const templateData = validation.data;
+
+  try {
+    // Verify the uploaded file exists and belongs to the user
+    const uploadedFilesRepo = new UploadedFilesRepository();
+    const uploadedFile = await uploadedFilesRepo.findById(templateData.originalFileId, user.userId);
+    
+    if (!uploadedFile) {
+      return createNotFoundResponse('Uploaded file');
+    }
+
+    if (uploadedFile.uploadStatus !== 'COMPLETED') {
+      return createValidationErrorResponse('File upload is not completed');
+    }
+
+    // Create template
+    const templatesRepo = new TemplatesRepository();
+    const template = await templatesRepo.create({
+      userId: user.userId,
+      name: templateData.name,
+      description: templateData.description,
+      originalFileId: templateData.originalFileId,
+      dimensions: templateData.dimensions,
+      pageCount: templateData.pageCount,
+      thumbnailUrl: templateData.thumbnailUrl,
+      isPublic: templateData.isPublic,
+      tags: templateData.tags,
+      metadata: {
+        fileSize: Number(uploadedFile.fileSize),
+        mimeType: uploadedFile.mimeType || 'application/pdf',
+        originalFilename: uploadedFile.originalFilename,
+        ...templateData.metadata,
+      },
+    });
+
+    return createSuccessResponse(template, 'Template created successfully');
+
+  } catch (error) {
+    console.error('Create template error:', error);
+    throw error;
+  }
 };
 
+// Export the handler with authentication middleware
 export const main = baseMiddleware(createTemplateHandler)
-  .use(authMiddleware)
-  .use(loggingMiddleware);
+  .use(authMiddleware);

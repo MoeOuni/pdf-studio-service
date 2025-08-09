@@ -29,7 +29,7 @@ provider:
     DB_PASSWORD: ${self:custom.database.password}
     
     # S3
-    S3_BUCKET: ${self:service}-files-${self:provider.stage}
+    S3_BUCKET: ${self:service}-${self:provider.stage}
     
   # Global function defaults
   timeout: 30
@@ -74,10 +74,13 @@ custom:
     bundle: true
     minify: false
     sourcemap: true
-    exclude: ['aws-sdk']
+    exclude: ['aws-sdk', 'mock-aws-s3', 'nock']
     target: 'node20'
     define:
       'require.resolve': undefined
+    external: ['mock-aws-s3', 'nock']
+    loader:
+      '.html': 'text'
     platform: 'node'
     concurrency: 10
     
