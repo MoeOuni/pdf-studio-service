@@ -1,9 +1,14 @@
 // Main database exports
 export * from './client';
-export * from './repository';
 
-// PostgreSQL (Prisma) exports
-export * from './prisma';
+// DynamoDB exports
+export * from './dynamodb/templates-repository';
+export * from './dynamodb/fields-repository';
+export * from './dynamodb/types';
 
-// DynamoDB exports  
-export * from './ddb';
+// PostgreSQL (Drizzle) exports
+export * from './drizzle/client';
+export * from './drizzle/schema';
+export * from './drizzle/users-repository-simple';
+export * from './drizzle/uploaded-files-repository';
+export * from './drizzle/generated-pdfs-repository';

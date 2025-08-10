@@ -4,7 +4,7 @@ import { authMiddleware } from '@/shared/auth/middleware';
 import { createSuccessResponse, createValidationErrorResponse } from '@/shared/utils/response';
 import { validateRequestBody, uploadRequestSchema } from '@/shared/utils/validation';
 import { generatePresignedUrl } from '@/shared/services/s3-service';
-import { UploadedFilesRepository } from '@/shared/database/prisma/uploaded-files-repository';
+import { UploadedFilesRepository } from '@/shared/database';
 
 /**
  * Generate presigned URL for file upload

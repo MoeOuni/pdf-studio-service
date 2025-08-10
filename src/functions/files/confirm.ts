@@ -3,7 +3,7 @@ import { baseMiddleware } from '@/shared/middleware';
 import { authMiddleware } from '@/shared/auth/middleware';
 import { createSuccessResponse, createValidationErrorResponse, createNotFoundResponse } from '@/shared/utils/response';
 import { validateRequestBody, confirmUploadSchema } from '@/shared/utils/validation';
-import { UploadedFilesRepository } from '@/shared/database/prisma/uploaded-files-repository';
+import { UploadedFilesRepository } from '@/shared/database';
 import { getFileMetadata } from '@/shared/services/s3-service';
 
 /**
@@ -28,7 +28,7 @@ const confirmUploadHandler = async (
     const uploadedFilesRepo = new UploadedFilesRepository();
 
     // Find the file and ensure it belongs to the user
-    const file = await uploadedFilesRepo.findById(fileId, user.userId);
+    const file = await uploadedFilesRepo.findByUserAndId(user.userId, fileId);
     if (!file) {
       return createNotFoundResponse('File');
     }
@@ -40,13 +40,17 @@ const confirmUploadHandler = async (
     }
 
     // Update file status to completed with actual metadata
-    const updatedFile = await uploadedFilesRepo.confirmUpload(
+    const updatedFile = await uploadedFilesRepo.update(
       fileId,
       {
         fileSize: s3Metadata.size,
-      },
-      user.userId
+        uploadStatus: 'COMPLETED',
+      }
     );
+
+    if (!updatedFile) {
+      return createNotFoundResponse('File');
+    }
 
     return createSuccessResponse({
       fileId: updatedFile.id,

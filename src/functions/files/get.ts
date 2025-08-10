@@ -2,7 +2,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda
 import { baseMiddleware } from '@/shared/middleware';
 import { authMiddleware } from '@/shared/auth/middleware';
 import { createSuccessResponse, createNotFoundResponse } from '@/shared/utils/response';
-import { UploadedFilesRepository } from '@/shared/database/prisma/uploaded-files-repository';
+import { UploadedFilesRepository } from '@/shared/database';
 import { generateDownloadUrl } from '@/shared/services/s3-service';
 
 const getFileHandler = async (
@@ -22,7 +22,7 @@ const getFileHandler = async (
     const uploadedFilesRepo = new UploadedFilesRepository();
     
     // Get the file and ensure it belongs to the user
-    const file = await uploadedFilesRepo.findById(fileId, user.userId);
+    const file = await uploadedFilesRepo.findByUserAndId(user.userId, fileId);
     if (!file) {
       return createNotFoundResponse('File');
     }

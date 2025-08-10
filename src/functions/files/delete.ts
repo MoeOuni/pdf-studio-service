@@ -2,7 +2,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda
 import { baseMiddleware } from '@/shared/middleware';
 import { authMiddleware } from '@/shared/auth/middleware';
 import { createSuccessResponse, createNotFoundResponse } from '@/shared/utils/response';
-import { UploadedFilesRepository } from '@/shared/database/prisma/uploaded-files-repository';
+import { UploadedFilesRepository } from '@/shared/database';
 
 const deleteFileHandler = async (
   event: APIGatewayProxyEvent,
@@ -20,9 +20,15 @@ const deleteFileHandler = async (
   try {
     const uploadedFilesRepo = new UploadedFilesRepository();
     
-    // Delete the file (repository will verify ownership)
-    const deletedFile = await uploadedFilesRepo.delete(fileId, user.userId);
-    if (!deletedFile) {
+    // First, get the file to verify ownership and get file details
+    const fileToDelete = await uploadedFilesRepo.findByUserAndId(user.userId, fileId);
+    if (!fileToDelete) {
+      return createNotFoundResponse('File');
+    }
+
+    // Delete the file
+    const deleted = await uploadedFilesRepo.deleteByUserAndId(user.userId, fileId);
+    if (!deleted) {
       return createNotFoundResponse('File');
     }
 
@@ -31,9 +37,9 @@ const deleteFileHandler = async (
 
     return createSuccessResponse({
       file: {
-        id: deletedFile.id,
-        originalFilename: deletedFile.originalFilename,
-        storedFilename: deletedFile.storedFilename,
+        id: fileToDelete.id,
+        originalFilename: fileToDelete.originalFilename,
+        storedFilename: fileToDelete.storedFilename,
       },
     }, 'File deleted successfully');
 

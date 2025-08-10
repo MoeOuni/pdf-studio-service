@@ -23,7 +23,13 @@ provider:
     DYNAMODB_TABLE: ${self:service}-${self:provider.stage}
     
     # PostgreSQL (RDS)
-    DATABASE_URL: ${self:custom.databaseUrl.${self:provider.stage}}
+    DATABASE_URL: 
+      Fn::Sub: 
+        - postgresql://${Username}:${Password}@${Endpoint}:5432/${DatabaseName}?schema=public
+        - Username: ${self:custom.database.username}
+          Password: ${self:custom.database.password}
+          Endpoint: !GetAtt PostgreSQLInstance.Endpoint.Address
+          DatabaseName: ${self:custom.database.name}
     DB_NAME: ${self:custom.database.name}
     DB_USER: ${self:custom.database.username}
     DB_PASSWORD: ${self:custom.database.password}
@@ -55,6 +61,11 @@ plugins:
   - serverless-offline
   - serverless-dynamodb
 
+# Package configuration
+package:
+  patterns:
+    - '!node_modules/**'
+
 # Custom configuration
 custom:
   # Database configuration per stage
@@ -62,12 +73,18 @@ custom:
     name: pdf_studio_${self:provider.stage}
     username: pdf_studio_user
     password: ${env:DB_PASSWORD, 'changeme123!'}
+  
+  # VPC configuration - you can customize per environment
+  vpc:
+    dev: vpc-0c9ea7b37f96a8092      # Default VPC for dev (working)
+    staging: vpc-0c9ea7b37f96a8092   # Change this when you have staging VPC
+    prod: vpc-0c9ea7b37f96a8092      # Change this when you have production VPC
     
   # Database configuration per stage
   databaseUrl:
-    dev: postgresql://${self:custom.database.username}:${self:custom.database.password}@localhost:5432/${self:custom.database.name}?schema=public
-    staging: postgresql://${self:custom.database.username}:${self:custom.database.password}@!GetAtt PostgreSQLInstance.Endpoint.Address:5432/${self:custom.database.name}?schema=public
-    prod: postgresql://${self:custom.database.username}:${self:custom.database.password}@!GetAtt PostgreSQLInstance.Endpoint.Address:5432/${self:custom.database.name}?schema=public
+    dev: postgresql://${self:custom.database.username}:${self:custom.database.password}@${env:RDS_ENDPOINT, 'localhost'}:5432/${self:custom.database.name}?schema=public
+    staging: postgresql://${self:custom.database.username}:${self:custom.database.password}@${env:RDS_ENDPOINT, 'localhost'}:5432/${self:custom.database.name}?schema=public
+    prod: postgresql://${self:custom.database.username}:${self:custom.database.password}@${env:RDS_ENDPOINT, 'localhost'}:5432/${self:custom.database.name}?schema=public
   
   # Deployment bucket for layers
   deploymentBucket: ${self:service}-deployments-${self:provider.stage}
@@ -75,7 +92,7 @@ custom:
   # ESBuild configuration for TypeScript compilation
   esbuild:
     bundle: true
-    minify: true  # Enable minification for production
+    minify: false  # Keep readable for debugging
     sourcemap: false  # Disable sourcemaps for smaller bundles
     exclude: 
       - 'aws-sdk'
@@ -93,8 +110,8 @@ custom:
       '.html': 'text'
     platform: 'node'
     concurrency: 10
-    keepNames: false  # Allow name mangling for smaller bundles
-    treeShaking: true
+    keepNames: true  # Keep function names for debugging
+    treeShaking: false  # Disable for compatibility
     format: 'cjs'
     mainFields: ['main', 'module']
     conditions: ['node']

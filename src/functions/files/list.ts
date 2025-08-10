@@ -1,9 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
-import { baseMiddleware } from '@/shared/middleware';
-import { authMiddleware } from '@/shared/auth/middleware';
+import { baseMiddleware, authMiddleware } from '@/shared/middleware';
 import { createSuccessResponse } from '@/shared/utils/response';
-import { UploadedFilesRepository } from '@/shared/database/prisma/uploaded-files-repository';
-import { UploadStatus } from '@prisma/client';
+import { UploadedFilesRepository, UploadStatus } from '@/shared/database';
 
 /**
  * List user's uploaded files
@@ -23,11 +21,21 @@ const listFilesHandler = async (
   try {
     const uploadedFilesRepo = new UploadedFilesRepository();
 
-    // Get paginated files for the user
-    const result = await uploadedFilesRepo.findByUserId(user.userId, page, limit, status);
+    // Calculate pagination
+    const offset = (page - 1) * limit;
+
+    // Get files for the user
+    const files = await uploadedFilesRepo.findByUserId(user.userId, {
+      status,
+      limit,
+      offset
+    });
+
+    // Get total count for pagination
+    const totalCount = await uploadedFilesRepo.countByUserId(user.userId, status);
 
     // Transform the data to exclude sensitive information
-    const transformedData = result.data.map(file => ({
+    const transformedData = files.map(file => ({
       id: file.id,
       originalFilename: file.originalFilename,
       storedFilename: file.storedFilename,
@@ -40,7 +48,14 @@ const listFilesHandler = async (
 
     return createSuccessResponse({
       files: transformedData,
-      pagination: result.pagination,
+      pagination: {
+        page,
+        limit,
+        total: totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+        hasNext: page * limit < totalCount,
+        hasPrev: page > 1
+      }
     }, 'Files retrieved successfully');
 
   } catch (error) {

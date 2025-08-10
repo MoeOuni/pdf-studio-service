@@ -18,12 +18,10 @@ cp -r node_modules/uuid layers/shared-dependencies/nodejs/node_modules/
 cp -r node_modules/jsonwebtoken layers/shared-dependencies/nodejs/node_modules/
 cp -r node_modules/http-status-codes layers/shared-dependencies/nodejs/node_modules/
 
-# Copy heavy dependencies (Prisma, PDF-lib, bcrypt)
+# Copy heavy dependencies (PDF-lib, bcryptjs)
 echo "Building heavy dependencies layer..."
-cp -r node_modules/@prisma layers/heavy-dependencies/nodejs/node_modules/
-cp -r node_modules/prisma layers/heavy-dependencies/nodejs/node_modules/
 cp -r node_modules/pdf-lib layers/heavy-dependencies/nodejs/node_modules/
-cp -r node_modules/bcrypt layers/heavy-dependencies/nodejs/node_modules/
+cp -r node_modules/bcryptjs layers/heavy-dependencies/nodejs/node_modules/
 cp -r node_modules/qrcode layers/heavy-dependencies/nodejs/node_modules/
 
 # Create zip files

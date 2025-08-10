@@ -1,10 +1,11 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
+import { z } from 'zod';
 import { baseMiddleware } from '@/shared/middleware';
 import { createSuccessResponse, createValidationErrorResponse, createNotFoundResponse, createUnauthorizedResponse } from '@/shared/utils/response';
-import { validateRequestBody, loginSchema } from '@/shared/utils/validation';
-import { UsersRepository } from '@/shared/database/prisma/users-repository';
+import { loginSchema } from '@/shared/utils/validation';
+import { UsersRepository } from '@/shared/database';
 import { generateTokens } from '@/shared/auth/jwt';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 
 /**
  * User login endpoint
@@ -13,15 +14,11 @@ const loginHandler = async (
   event: APIGatewayProxyEvent,
   _context: Context
 ): Promise<APIGatewayProxyResult> => {
-  // Validate request body
-  const validation = validateRequestBody(event.body, loginSchema);
-  if (!validation.success) {
-    return createValidationErrorResponse(validation.error);
-  }
-
-  const { email, password } = validation.data;
-
+  // Validate request body (middy already parsed JSON)
   try {
+    const validatedData = loginSchema.parse(event.body);
+    const { email, password } = validatedData;
+
     const usersRepo = new UsersRepository();
     
     // Find user by email
@@ -45,7 +42,7 @@ const loginHandler = async (
     const tokens = await generateTokens({
       userId: user.id,
       email: user.email,
-      name: user.name,
+      name: user.name || undefined,
     });
 
     // Prepare response data (exclude sensitive information)
@@ -56,20 +53,22 @@ const loginHandler = async (
         name: user.name,
         emailVerified: user.emailVerified,
         createdAt: user.createdAt,
-        profile: user.profile ? {
-          company: user.profile.company,
-          timezone: user.profile.timezone,
-          language: user.profile.language,
-          preferences: user.profile.preferences,
-        } : null,
+        // Note: Profile is separate in Drizzle schema
+        profile: null,
       },
       tokens,
     };
 
     return createSuccessResponse(responseData, 'Login successful');
-  } catch (error) {
-    console.error('Login error:', error);
-    throw error;
+  } catch (validationError) {
+    if (validationError instanceof z.ZodError) {
+      const errorMessages = validationError.errors.map(err =>
+        `${err.path.join('.')}: ${err.message}`
+      ).join(', ');
+      return createValidationErrorResponse(errorMessages);
+    }
+    console.error('Login error:', validationError);
+    throw validationError;
   }
 };
 

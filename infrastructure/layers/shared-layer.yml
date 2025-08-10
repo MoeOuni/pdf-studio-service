@@ -13,12 +13,12 @@ Resources:
       CompatibleArchitectures:
         - x86_64
 
-  # Layer for heavy dependencies like Prisma and PDF-lib
+  # Layer for heavy dependencies like PDF-lib and other binary modules
   HeavyDependenciesLayer:
     Type: AWS::Lambda::LayerVersion
     Properties:
       LayerName: ${self:service}-heavy-dependencies-${self:provider.stage}
-      Description: Heavy dependencies like Prisma and PDF-lib
+      Description: Heavy dependencies like PDF-lib and other binary modules
       Content:
         S3Bucket: ${self:custom.deploymentBucket}
         S3Key: layers/heavy-dependencies.zip

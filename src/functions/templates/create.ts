@@ -3,9 +3,8 @@ import { baseMiddleware } from '@/shared/middleware';
 import { authMiddleware } from '@/shared/auth/middleware';
 import { createSuccessResponse, createValidationErrorResponse, createNotFoundResponse } from '@/shared/utils/response';
 import { validateRequestBody, createTemplateSchema } from '@/shared/utils/validation';
-import { TemplatesRepository } from '@/shared/database/dynamodb/templates-repository';
-import { UploadedFilesRepository } from '@/shared/database/prisma/uploaded-files-repository';
-
+import { TemplatesRepository } from '@/shared/database';
+import { UploadedFilesRepository } from '@/shared/database';
 /**
  * Create a new PDF template
  */
@@ -27,7 +26,7 @@ const createTemplateHandler = async (
   try {
     // Verify the uploaded file exists and belongs to the user
     const uploadedFilesRepo = new UploadedFilesRepository();
-    const uploadedFile = await uploadedFilesRepo.findById(templateData.originalFileId, user.userId);
+    const uploadedFile = await uploadedFilesRepo.findByUserAndId(user.userId, templateData.originalFileId);
     
     if (!uploadedFile) {
       return createNotFoundResponse('Uploaded file');
