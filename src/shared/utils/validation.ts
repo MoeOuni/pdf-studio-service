@@ -24,7 +24,7 @@ export const dimensionsSchema = z.object({
 // Field type validation
 export const fieldTypeSchema = z.enum([
   'text',
-  'signature', 
+  'signature',
   'date',
   'email',
   'image',
@@ -36,18 +36,18 @@ export const fieldTypeSchema = z.enum([
 
 // Field style validation
 export const fieldStyleSchema = z.object({
-  fontFamily: z.string().min(1, 'Font family is required'),
-  fontSize: z.number().min(1, 'Font size must be positive'),
-  textColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid color format'),
-  backgroundColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid color format'),
-  textAlign: z.enum(['left', 'center', 'right']),
-  bold: z.boolean(),
-  italic: z.boolean(),
-  underline: z.boolean(),
+  fontFamily: z.string().min(1, 'Font family is required').optional(),
+  fontSize: z.number().min(1, 'Font size must be positive').optional(),
+  textColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid color format').optional(),
+  backgroundColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid color format').optional(),
+  textAlign: z.enum(['left', 'center', 'right']).optional(),
+  bold: z.boolean().optional(),
+  italic: z.boolean().optional(),
+  underline: z.boolean().optional(),
   lineThickness: z.number().min(0).optional(),
   lineStyle: z.enum(['solid', 'dashed', 'dotted']).optional(),
   opacity: z.number().min(0).max(1).optional(),
-}).partial();
+});
 
 // Field layout validation
 export const fieldLayoutSchema = z.object({
@@ -128,7 +128,7 @@ export const createFieldSchema = z.object({
   page: z.number().min(1, 'Page must be at least 1'),
   position: positionSchema,
   size: sizeSchema,
-  style: fieldStyleSchema,
+  style: fieldStyleSchema.optional(),
   validation: z.object({
     required: z.boolean().optional(),
     minLength: z.number().min(0).optional(),
@@ -196,20 +196,20 @@ export function validateRequestBody<T>(
 
     const parsedBody = JSON.parse(body);
     const validatedData = schema.parse(parsedBody);
-    
+
     return { success: true, data: validatedData };
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const errorMessages = error.errors.map(err => 
+      const errorMessages = error.errors.map(err =>
         `${err.path.join('.')}: ${err.message}`
       ).join(', ');
       return { success: false, error: errorMessages };
     }
-    
+
     if (error instanceof SyntaxError) {
       return { success: false, error: 'Invalid JSON format' };
     }
-    
+
     return { success: false, error: 'Validation failed' };
   }
 }
@@ -218,7 +218,7 @@ export function validateRequestBody<T>(
  * Validate path parameters
  */
 export function validatePathParameters(
-  pathParameters: Record<string, string> | null,
+  pathParameters: Record<string, string | undefined> | null,
   requiredParams: string[]
 ): { success: true; data: Record<string, string> } | { success: false; error: string } {
   if (!pathParameters) {
@@ -226,13 +226,27 @@ export function validatePathParameters(
   }
 
   const missingParams = requiredParams.filter(param => !pathParameters[param]);
-  
+
   if (missingParams.length > 0) {
-    return { 
-      success: false, 
-      error: `Missing required path parameters: ${missingParams.join(', ')}` 
+    return {
+      success: false,
+      error: `Missing required path parameters: ${missingParams.join(', ')}`
     };
   }
 
-  return { success: true, data: pathParameters };
+  // Filter out undefined values and ensure all required params are strings
+  const validatedParams: Record<string, string> = {};
+  for (const param of requiredParams) {
+    const value = pathParameters[param];
+    if (typeof value === 'string' && value.trim() !== '') {
+      validatedParams[param] = value;
+    } else {
+      return {
+        success: false,
+        error: `Invalid path parameter: ${param}`
+      };
+    }
+  }
+
+  return { success: true, data: validatedParams };
 }

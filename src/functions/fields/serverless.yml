@@ -10,22 +10,32 @@ functions:
     environment:
       FUNCTION_NAME: createField
       
-  getField:
+  getTemplateFields:
     handler: src/functions/fields/get.main
+    description: "Get all fields for a template"
+    events:
+      - httpApi:
+          path: /templates/{templateId}/fields
+          method: get
+    environment:
+      FUNCTION_NAME: getTemplateFields
+      
+  getFieldById:
+    handler: src/functions/fields/get-by-id.main
     description: "Get a specific field by ID"
     events:
       - httpApi:
-          path: /fields/{id}
+          path: /fields/{fieldId}
           method: get
     environment:
-      FUNCTION_NAME: getField
+      FUNCTION_NAME: getFieldById
       
   updateField:
     handler: src/functions/fields/update.main
     description: "Update an existing field"
     events:
       - httpApi:
-          path: /fields/{id}
+          path: /fields/{fieldId}
           method: put
     environment:
       FUNCTION_NAME: updateField
@@ -35,7 +45,7 @@ functions:
     description: "Delete a field"
     events:
       - httpApi:
-          path: /fields/{id}
+          path: /fields/{fieldId}
           method: delete
     environment:
       FUNCTION_NAME: deleteField

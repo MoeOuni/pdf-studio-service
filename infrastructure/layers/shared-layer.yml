@@ -1,0 +1,41 @@
+# Shared Lambda Layer for common dependencies
+Resources:
+  SharedDependenciesLayer:
+    Type: AWS::Lambda::LayerVersion
+    Properties:
+      LayerName: ${self:service}-shared-dependencies-${self:provider.stage}
+      Description: Shared dependencies for PDF Studio API
+      Content:
+        S3Bucket: ${self:custom.deploymentBucket}
+        S3Key: layers/shared-dependencies.zip
+      CompatibleRuntimes:
+        - nodejs20.x
+      CompatibleArchitectures:
+        - x86_64
+
+  # Layer for heavy dependencies like Prisma and PDF-lib
+  HeavyDependenciesLayer:
+    Type: AWS::Lambda::LayerVersion
+    Properties:
+      LayerName: ${self:service}-heavy-dependencies-${self:provider.stage}
+      Description: Heavy dependencies like Prisma and PDF-lib
+      Content:
+        S3Bucket: ${self:custom.deploymentBucket}
+        S3Key: layers/heavy-dependencies.zip
+      CompatibleRuntimes:
+        - nodejs20.x
+      CompatibleArchitectures:
+        - x86_64
+
+Outputs:
+  SharedDependenciesLayerArn:
+    Description: ARN of the shared dependencies layer
+    Value: !Ref SharedDependenciesLayer
+    Export:
+      Name: ${self:service}-shared-dependencies-layer-${self:provider.stage}
+
+  HeavyDependenciesLayerArn:
+    Description: ARN of the heavy dependencies layer
+    Value: !Ref HeavyDependenciesLayer
+    Export:
+      Name: ${self:service}-heavy-dependencies-layer-${self:provider.stage}

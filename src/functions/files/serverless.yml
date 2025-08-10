@@ -7,7 +7,7 @@ functions:
     memorySize: 256
     events:
       - httpApi:
-          path: /files/upload-url
+          path: /files/generate-url
           method: post
     environment:
       FUNCTION_NAME: generateUploadUrl
@@ -19,7 +19,7 @@ functions:
     memorySize: 256
     events:
       - httpApi:
-          path: /files/confirm-upload
+          path: /files/confirm
           method: post
     environment:
       FUNCTION_NAME: confirmUpload

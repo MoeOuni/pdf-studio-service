@@ -5,9 +5,9 @@ import { validatePathParameters } from '@/shared/utils/validation';
 import { FieldsRepository } from '@/shared/database/dynamodb/fields-repository';
 
 /**
- * Delete a template field
+ * Get a specific field by ID
  */
-const deleteFieldHandler = async (
+const getFieldByIdHandler = async (
   event: APIGatewayProxyEvent,
   context: Context
 ): Promise<APIGatewayProxyResult> => {
@@ -25,23 +25,20 @@ const deleteFieldHandler = async (
   try {
     const fieldsRepo = new FieldsRepository();
 
-    // Delete the field (repository will verify ownership)
-    const deletedField = await fieldsRepo.delete(fieldId, user.userId);
+    // Get the field and verify ownership
+    const field = await fieldsRepo.findByIdAndUserId(fieldId, user.userId);
     
-    if (!deletedField) {
+    if (!field) {
       return createNotFoundResponse('Field');
     }
 
-    return createSuccessResponse(
-      { fieldId: deletedField.id }, 
-      'Field deleted successfully'
-    );
+    return createSuccessResponse(field, 'Field retrieved successfully');
 
   } catch (error) {
-    console.error('Delete field error:', error);
+    console.error('Get field by ID error:', error);
     throw error;
   }
 };
 
-export const main = baseMiddleware(deleteFieldHandler)
+export const main = baseMiddleware(getFieldByIdHandler)
   .use(authMiddleware);

@@ -69,20 +69,35 @@ custom:
     staging: postgresql://${self:custom.database.username}:${self:custom.database.password}@!GetAtt PostgreSQLInstance.Endpoint.Address:5432/${self:custom.database.name}?schema=public
     prod: postgresql://${self:custom.database.username}:${self:custom.database.password}@!GetAtt PostgreSQLInstance.Endpoint.Address:5432/${self:custom.database.name}?schema=public
   
+  # Deployment bucket for layers
+  deploymentBucket: ${self:service}-deployments-${self:provider.stage}
+  
   # ESBuild configuration for TypeScript compilation
   esbuild:
     bundle: true
-    minify: false
-    sourcemap: true
-    exclude: ['aws-sdk', 'mock-aws-s3', 'nock']
+    minify: true  # Enable minification for production
+    sourcemap: false  # Disable sourcemaps for smaller bundles
+    exclude: 
+      - 'aws-sdk'
+      - 'mock-aws-s3' 
+      - 'nock'
     target: 'node20'
     define:
       'require.resolve': undefined
-    external: ['mock-aws-s3', 'nock']
+      'process.env.NODE_ENV': '"production"'
+    external: 
+      - 'aws-sdk'
+      - 'mock-aws-s3'
+      - 'nock'
     loader:
       '.html': 'text'
     platform: 'node'
     concurrency: 10
+    keepNames: false  # Allow name mangling for smaller bundles
+    treeShaking: true
+    format: 'cjs'
+    mainFields: ['main', 'module']
+    conditions: ['node']
     
   # Serverless offline configuration for local development
   serverless-offline:
@@ -115,3 +130,6 @@ resources:
   
   # S3 resources
   - ${file(infrastructure/resources/s3.yml)}
+  
+  # Lambda layers (commented out for now)
+  # - ${file(infrastructure/layers/shared-layer.yml)}
