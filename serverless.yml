@@ -106,7 +106,7 @@ custom:
     conditions: ['node']
 
 # Functions configuration
-functions: ${file(infrastructure/functions.yml):functions}
+functions: ${file(infrastructure/functions.yml)}
 
 # Import resources from separate files
 resources:

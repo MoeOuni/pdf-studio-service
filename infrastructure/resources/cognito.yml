@@ -4,9 +4,6 @@ Resources:
     Type: AWS::Cognito::UserPool
     Properties:
       UserPoolName: ${self:service}-user-pool-${self:provider.stage}
-      AliasAttributes:
-        - email
-        - preferred_username
       UsernameAttributes:
         - email
       AutoVerifiedAttributes:
@@ -44,7 +41,6 @@ Resources:
         EmailSendingAccount: COGNITO_DEFAULT
       AdminCreateUserConfig:
         AllowAdminCreateUserOnly: false
-        InviteMessageAction: SUPPRESS
       DeviceConfiguration:
         ChallengeRequiredOnNewDevice: false
         DeviceOnlyRememberedOnUserPrompt: true
@@ -62,8 +58,8 @@ Resources:
       UserPoolId: !Ref UserPool
       GenerateSecret: false
       ExplicitAuthFlows:
-        - ADMIN_NO_SRP_AUTH
-        - USER_PASSWORD_AUTH
+        - ALLOW_ADMIN_USER_PASSWORD_AUTH
+        - ALLOW_USER_PASSWORD_AUTH
         - ALLOW_USER_SRP_AUTH
         - ALLOW_REFRESH_TOKEN_AUTH
       SupportedIdentityProviders:
