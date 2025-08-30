@@ -1,6 +1,6 @@
 # Lambda execution role with necessary permissions
 iamRoleStatements:
-  # DynamoDB permissions
+  # DynamoDB permissions for single table design
   - Effect: Allow
     Action:
       - dynamodb:Query
@@ -15,7 +15,7 @@ iamRoleStatements:
       - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}"
       - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}/index/*"
   
-  # S3 permissions
+  # S3 permissions for file storage
   - Effect: Allow
     Action:
       - s3:GetObject
@@ -33,14 +33,7 @@ iamRoleStatements:
       - s3:GetBucketVersioning
     Resource:
       - "arn:aws:s3:::${self:provider.environment.S3_BUCKET}"
-  
-  # RDS permissions (for connection and monitoring)
-  - Effect: Allow
-    Action:
-      - rds:DescribeDBInstances
-      - rds:DescribeDBClusters
-    Resource: "*"
-  
+
   # CloudWatch Logs permissions
   - Effect: Allow
     Action:
@@ -60,12 +53,30 @@ iamRoleStatements:
       - cloudwatch:ListMetrics
     Resource: "*"
   
-
-  
   # X-Ray permissions for tracing
   - Effect: Allow
     Action:
       - xray:PutTraceSegments
       - xray:PutTelemetryRecords
     Resource: "*"
+  
+  # AWS Cognito permissions
+  - Effect: Allow
+    Action:
+      - cognito-idp:AdminCreateUser
+      - cognito-idp:AdminSetUserPassword
+      - cognito-idp:AdminDeleteUser
+      - cognito-idp:AdminGetUser
+      - cognito-idp:AdminInitiateAuth
+      - cognito-idp:AdminRespondToAuthChallenge
+      - cognito-idp:AdminConfirmSignUp
+      - cognito-idp:GetUser
+      - cognito-idp:UpdateUserAttributes
+      - cognito-idp:AdminUpdateUserAttributes
+      - cognito-idp:ListUsers
+      - cognito-idp:ForgotPassword
+      - cognito-idp:ConfirmForgotPassword
+      - cognito-idp:ResendConfirmationCode
+    Resource:
+      - "arn:aws:cognito-idp:${self:provider.region}:*:userpool/*"
   

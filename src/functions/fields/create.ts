@@ -1,9 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
 import { baseMiddleware, authMiddleware } from '@/shared/middleware';
 import { createSuccessResponse, createValidationErrorResponse, createNotFoundResponse } from '@/shared/utils/response';
-import { validateRequestBody, createFieldSchema } from '@/shared/utils/validation';
-import { FieldsRepository } from '@/shared/database/dynamodb/fields-repository';
-import { TemplatesRepository } from '@/shared/database/dynamodb/templates-repository';
+import { FieldsRepository, TemplatesRepository } from '@/shared/database';
 
 /**
  * Create a new template field
@@ -15,13 +13,17 @@ const createFieldHandler = async (
   // Get authenticated user from context (added by authMiddleware)
   const user = (context as any).user;
 
-  // Validate request body
-  const validation = validateRequestBody(event.body, createFieldSchema);
-  if (!validation.success) {
-    return createValidationErrorResponse(validation.error);
+  // Parse request body
+  if (!event.body) {
+    return createValidationErrorResponse('Request body is required');
   }
 
-  const fieldData = validation.data;
+  let fieldData;
+  try {
+    fieldData = JSON.parse(event.body);
+  } catch (error) {
+    return createValidationErrorResponse('Invalid JSON in request body');
+  }
 
   try {
     // Verify the template exists and belongs to the user
@@ -48,18 +50,26 @@ const createFieldHandler = async (
     const field = await fieldsRepo.create({
       templateId: fieldData.templateId,
       userId: user.userId,
-      name: fieldData.name,
       type: fieldData.type,
-      page: fieldData.page,
-      position: fieldData.position,
-      size: fieldData.size,
-      style: fieldData.style ? { ...defaultStyle, ...fieldData.style } : defaultStyle,
+      name: fieldData.name,
+      label: fieldData.name, // Use name as label for now
+      position: {
+        x: fieldData.position.x,
+        y: fieldData.position.y,
+        width: fieldData.size.width,
+        height: fieldData.size.height,
+        page: fieldData.page,
+      },
+      properties: {
+        style: fieldData.style ? { ...defaultStyle, ...fieldData.style } : defaultStyle,
+        defaultValue: fieldData.defaultValue,
+        placeholder: fieldData.placeholder,
+        isRequired: fieldData.isRequired,
+        isReadonly: fieldData.isReadonly,
+        order: fieldData.order,
+        tableConfig: fieldData.tableConfig,
+      },
       validation: fieldData.validation,
-      defaultValue: fieldData.defaultValue,
-      placeholder: fieldData.placeholder,
-      isRequired: fieldData.isRequired,
-      isReadonly: fieldData.isReadonly,
-      order: fieldData.order,
     });
 
     return createSuccessResponse(field, 'Field created successfully');

@@ -1,6 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
 import { baseMiddleware } from '@/shared/middleware';
-import { authMiddleware } from '@/shared/auth/middleware';
+import { authMiddleware } from '@/shared/middleware';
 import { createSuccessResponse, createNotFoundResponse } from '@/shared/utils/response';
 import { UploadedFilesRepository } from '@/shared/database';
 import { generateDownloadUrl } from '@/shared/services/s3-service';

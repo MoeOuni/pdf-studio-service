@@ -13,7 +13,7 @@ export const baseMiddleware = (handler: any) => {
   return middy(handler)
     .use(jsonBodyParser())
     .use(cors({
-      origin: '*',
+      origin: '*', // Allow all origins for now to test
       credentials: true,
     }))
     .use(securityHeaders())
@@ -28,45 +28,40 @@ export const baseMiddleware = (handler: any) => {
 
         // Return a standardized error response
         request.response = createInternalServerErrorResponse(
-          process.env['STAGE'] === 'dev' 
-            ? request.error?.message || 'Internal server error'
-            : 'Internal server error'
+          request.error?.message || 'Internal server error',
+          request.error
         );
       },
     });
 };
 
 /**
- * Authentication middleware (placeholder for now)
- * TODO: Implement JWT validation or Cognito integration
+ * Authentication middleware using AWS Cognito
  */
 export const authMiddleware = {
   before: async (request: middy.Request<APIGatewayProxyEvent, APIGatewayProxyResult, Error, Context>) => {
-    // For now, we'll skip authentication
-    // TODO: Implement proper authentication
-    const authHeader = request.event.headers['authorization'] || request.event.headers['Authorization'];
-    
-    if (!authHeader) {
-      // For development, we'll create a mock user
-      if (process.env['STAGE'] === 'dev') {
-        (request.event as any).user = {
-          id: 'dev-user-123',
-          email: 'dev@example.com',
-          name: 'Dev User',
-        };
-        return;
-      }
-      
-      throw new Error('Authorization header is required');
-    }
+    try {
+      const authHeader = request.event.headers['authorization'] || request.event.headers['Authorization'];
 
-    // TODO: Validate JWT token or Cognito token
-    // For now, mock user
-    (request.event as any).user = {
-      id: 'user-123',
-      email: 'user@example.com',
-      name: 'Test User',
-    };
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        throw new Error('Authorization header is required');
+      }
+
+      const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+
+      // Import Cognito auth service
+      const { CognitoAuthService } = await import('@/shared/auth/cognito-auth');
+      const cognitoAuth = new CognitoAuthService();
+
+      // Verify the Cognito access token
+      const user = await cognitoAuth.verifyToken(token);
+
+      // Add user to context for use in handlers
+      (request.context as any).user = user;
+    } catch (error) {
+      console.error('Authentication error:', error);
+      throw new Error('Invalid or expired token');
+    }
   },
 };
 
@@ -77,7 +72,7 @@ export const validationMiddleware = (schema: any, target: 'body' | 'pathParamete
   before: async (request: middy.Request<APIGatewayProxyEvent, APIGatewayProxyResult, Error, Context>) => {
     try {
       let dataToValidate;
-      
+
       switch (target) {
         case 'body':
           dataToValidate = request.event.body;
@@ -93,7 +88,7 @@ export const validationMiddleware = (schema: any, target: 'body' | 'pathParamete
       }
 
       const validatedData = schema.parse(dataToValidate);
-      
+
       // Attach validated data to the event
       (request.event as any).validatedData = validatedData;
     } catch (error: any) {

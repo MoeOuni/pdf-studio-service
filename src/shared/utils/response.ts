@@ -19,8 +19,6 @@ export function createSuccessResponse<T>(
     statusCode,
     headers: {
       'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Credentials': true,
     },
     body: JSON.stringify(response),
   };
@@ -110,11 +108,24 @@ export function createConflictResponse(
  * Create an internal server error response
  */
 export function createInternalServerErrorResponse(
-  message: string = 'Internal server error'
+  message: string = 'Internal server error',
+  error?: any
 ): APIGatewayProxyResult {
+  const stage = process.env['STAGE'];
+  const isDev = stage === 'dev';
+  
+  console.log('Current STAGE:', stage, 'isDev:', isDev);
+  
   return createErrorResponse(
     'Internal Server Error',
     message,
-    StatusCodes.INTERNAL_SERVER_ERROR
+    StatusCodes.INTERNAL_SERVER_ERROR,
+    // Always show error details for debugging
+    error ? {
+      stage: stage,
+      error: error.message || String(error),
+      stack: error.stack,
+      name: error.name,
+    } : undefined
   );
 }

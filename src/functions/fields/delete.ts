@@ -2,7 +2,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda
 import { baseMiddleware, authMiddleware } from '@/shared/middleware';
 import { createSuccessResponse, createNotFoundResponse, createValidationErrorResponse } from '@/shared/utils/response';
 import { validatePathParameters } from '@/shared/utils/validation';
-import { FieldsRepository } from '@/shared/database/dynamodb/fields-repository';
+import { FieldsRepository } from '@/shared/database';
 
 /**
  * Delete a template field
@@ -25,15 +25,21 @@ const deleteFieldHandler = async (
   try {
     const fieldsRepo = new FieldsRepository();
 
-    // Delete the field (repository will verify ownership)
-    const deletedField = await fieldsRepo.delete(fieldId, user.userId);
+    // Verify field exists and user has access
+    const field = await fieldsRepo.findByIdAndUserId(fieldId, user.userId);
+    if (!field) {
+      return createNotFoundResponse('Field');
+    }
+
+    // Delete the field
+    const deletedField = await fieldsRepo.delete(fieldId);
     
     if (!deletedField) {
       return createNotFoundResponse('Field');
     }
 
     return createSuccessResponse(
-      { fieldId: deletedField.id }, 
+      { fieldId: field.id }, 
       'Field deleted successfully'
     );
 

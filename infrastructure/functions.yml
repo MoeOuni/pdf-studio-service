@@ -1,0 +1,213 @@
+functions:
+  # Health check
+  health:
+    handler: src/functions/health/handler.handler
+    description: 'Health check endpoint'
+    timeout: 10
+    memorySize: 128
+    events:
+      - httpApi:
+          path: /health
+          method: get
+    environment:
+      MAIN_TABLE: ${self:provider.environment.DYNAMODB_TABLE}
+
+  # Authentication functions
+  login:
+    handler: src/functions/auth/login.handler
+    description: 'User login'
+    timeout: 15
+    memorySize: 256
+    events:
+      - httpApi:
+          path: /auth/login
+          method: post
+    environment:
+      MAIN_TABLE: ${self:provider.environment.DYNAMODB_TABLE}
+
+  register:
+    handler: src/functions/auth/register.handler
+    description: 'User registration'
+    timeout: 15
+    memorySize: 256
+    events:
+      - httpApi:
+          path: /auth/register
+          method: post
+    environment:
+      MAIN_TABLE: ${self:provider.environment.DYNAMODB_TABLE}
+
+  # Template functions
+  createTemplate:
+    handler: src/functions/templates/create.handler
+    description: 'Create a new template'
+    timeout: 25
+    memorySize: 512
+    events:
+      - httpApi:
+          path: /templates
+          method: post
+    environment:
+      MAIN_TABLE: ${self:provider.environment.DYNAMODB_TABLE}
+
+  getTemplate:
+    handler: src/functions/templates/get-by-id.handler
+    description: 'Get template by ID'
+    timeout: 15
+    memorySize: 256
+    events:
+      - httpApi:
+          path: /templates/{templateId}
+          method: get
+    environment:
+      MAIN_TABLE: ${self:provider.environment.DYNAMODB_TABLE}
+
+  listTemplates:
+    handler: src/functions/templates/get.handler
+    description: 'List all templates'
+    timeout: 15
+    memorySize: 256
+    events:
+      - httpApi:
+          path: /templates
+          method: get
+    environment:
+      MAIN_TABLE: ${self:provider.environment.DYNAMODB_TABLE}
+
+  updateTemplate:
+    handler: src/functions/templates/update.handler
+    description: 'Update template'
+    timeout: 25
+    memorySize: 512
+    events:
+      - httpApi:
+          path: /templates/{templateId}
+          method: put
+    environment:
+      MAIN_TABLE: ${self:provider.environment.DYNAMODB_TABLE}
+
+  deleteTemplate:
+    handler: src/functions/templates/delete.handler
+    description: 'Delete template'
+    timeout: 15
+    memorySize: 256
+    events:
+      - httpApi:
+          path: /templates/{templateId}
+          method: delete
+    environment:
+      MAIN_TABLE: ${self:provider.environment.DYNAMODB_TABLE}
+
+  createBlankTemplate:
+    handler: src/functions/templates/create-blank.handler
+    description: 'Create blank template'
+    timeout: 30
+    memorySize: 1024
+    events:
+      - httpApi:
+          path: /templates/blank
+          method: post
+    environment:
+      MAIN_TABLE: ${self:provider.environment.DYNAMODB_TABLE}
+
+  # Field functions
+  createField:
+    handler: src/functions/fields/create.handler
+    description: 'Create a new field'
+    timeout: 15
+    memorySize: 256
+    events:
+      - httpApi:
+          path: /fields
+          method: post
+    environment:
+      MAIN_TABLE: ${self:provider.environment.DYNAMODB_TABLE}
+
+  getTemplateFields:
+    handler: src/functions/fields/get.handler
+    description: 'Get fields for a template'
+    timeout: 15
+    memorySize: 256
+    events:
+      - httpApi:
+          path: /templates/{templateId}/fields
+          method: get
+    environment:
+      MAIN_TABLE: ${self:provider.environment.DYNAMODB_TABLE}
+
+  getFieldById:
+    handler: src/functions/fields/get-by-id.handler
+    description: 'Get field by ID'
+    timeout: 15
+    memorySize: 256
+    events:
+      - httpApi:
+          path: /fields/{fieldId}
+          method: get
+    environment:
+      MAIN_TABLE: ${self:provider.environment.DYNAMODB_TABLE}
+
+  updateField:
+    handler: src/functions/fields/update.handler
+    description: 'Update field'
+    timeout: 15
+    memorySize: 256
+    events:
+      - httpApi:
+          path: /fields/{fieldId}
+          method: put
+    environment:
+      MAIN_TABLE: ${self:provider.environment.DYNAMODB_TABLE}
+
+  deleteField:
+    handler: src/functions/fields/delete.handler
+    description: 'Delete field'
+    timeout: 15
+    memorySize: 256
+    events:
+      - httpApi:
+          path: /fields/{fieldId}
+          method: delete
+    environment:
+      MAIN_TABLE: ${self:provider.environment.DYNAMODB_TABLE}
+
+  # File functions
+  getFile:
+    handler: src/functions/files/get.handler
+    description: 'Get file'
+    timeout: 15
+    memorySize: 256
+    events:
+      - httpApi:
+          path: /files/{fileId}
+          method: get
+    environment:
+      MAIN_TABLE: ${self:provider.environment.DYNAMODB_TABLE}
+      FILES_BUCKET: ${self:provider.environment.S3_BUCKET}
+
+  uploadFile:
+    handler: src/functions/files/upload.handler
+    description: 'Upload file'
+    timeout: 30
+    memorySize: 512
+    events:
+      - httpApi:
+          path: /files/upload
+          method: post
+    environment:
+      MAIN_TABLE: ${self:provider.environment.DYNAMODB_TABLE}
+      FILES_BUCKET: ${self:provider.environment.S3_BUCKET}
+
+  # PDF generation
+  generatePdf:
+    handler: src/functions/pdf/generate.handler
+    description: 'Generate PDF from template'
+    timeout: 30
+    memorySize: 1024
+    events:
+      - httpApi:
+          path: /pdf/generate
+          method: post
+    environment:
+      MAIN_TABLE: ${self:provider.environment.DYNAMODB_TABLE}
+      FILES_BUCKET: ${self:provider.environment.S3_BUCKET}

@@ -38,8 +38,8 @@ export const fieldTypeSchema = z.enum([
 export const fieldStyleSchema = z.object({
   fontFamily: z.string().min(1, 'Font family is required').optional(),
   fontSize: z.number().min(1, 'Font size must be positive').optional(),
-  textColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid color format').optional(),
-  backgroundColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid color format').optional(),
+  textColor: z.string().regex(/^(#[0-9A-Fa-f]{6}|transparent)$/, 'Invalid color format').optional(),
+  backgroundColor: z.string().regex(/^(#[0-9A-Fa-f]{6}|transparent)$/, 'Invalid color format').optional(),
   textAlign: z.enum(['left', 'center', 'right']).optional(),
   bold: z.boolean().optional(),
   italic: z.boolean().optional(),
@@ -143,6 +143,7 @@ export const createFieldSchema = z.object({
   isRequired: z.boolean().optional(),
   isReadonly: z.boolean().optional(),
   order: z.number().min(0).optional(),
+  tableConfig: z.record(z.any()).optional(), // Allow table configuration for table fields
 });
 
 export const updateFieldSchema = z.object({
@@ -166,6 +167,7 @@ export const updateFieldSchema = z.object({
   isRequired: z.boolean().optional(),
   isReadonly: z.boolean().optional(),
   order: z.number().min(0).optional(),
+  tableConfig: z.record(z.any()).optional(), // Allow table configuration for table fields
 });
 
 export const updateFieldsOrderSchema = z.object({
@@ -186,7 +188,7 @@ export const generatePdfSchema = z.object({
  * Validate request body against a schema
  */
 export function validateRequestBody<T>(
-  body: string | null,
+  body: string | object | null,
   schema: z.ZodSchema<T>
 ): { success: true; data: T } | { success: false; error: string } {
   try {
@@ -194,7 +196,14 @@ export function validateRequestBody<T>(
       return { success: false, error: 'Request body is required' };
     }
 
-    const parsedBody = JSON.parse(body);
+    // If body is already parsed (by middy jsonBodyParser), use it directly
+    let parsedBody: any;
+    if (typeof body === 'string') {
+      parsedBody = JSON.parse(body);
+    } else {
+      parsedBody = body;
+    }
+
     const validatedData = schema.parse(parsedBody);
 
     return { success: true, data: validatedData };

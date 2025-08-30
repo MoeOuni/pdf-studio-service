@@ -1,14 +1,23 @@
-// Main database exports
-export * from './client';
+/**
+ * Database Module Index
+ * Exports clean repository classes and entities for DynamoDB operations
+ * No SQL database - Pure AWS DynamoDB with single table design
+ */
 
-// DynamoDB exports
-export * from './dynamodb/templates-repository';
-export * from './dynamodb/fields-repository';
-export * from './dynamodb/types';
+// Export all entities (types)
+export * from './entities';
 
-// PostgreSQL (Drizzle) exports
-export * from './drizzle/client';
-export * from './drizzle/schema';
-export * from './drizzle/users-repository-simple';
-export * from './drizzle/uploaded-files-repository';
-export * from './drizzle/generated-pdfs-repository';
+// Export all repositories 
+export * from './repositories';
+
+// Export database configuration
+export { dynamoDBClient, TABLE_NAME, FILES_BUCKET } from './config';
+
+// Legacy compatibility layer for existing function imports
+// These will be gradually replaced with direct repository usage
+import { UserRepository, TemplateRepository, FieldRepository, UploadedFileRepository } from './repositories';
+
+export class UsersRepository extends UserRepository {}
+export class TemplatesRepository extends TemplateRepository {}
+export class FieldsRepository extends FieldRepository {}
+export class UploadedFilesRepository extends UploadedFileRepository {}

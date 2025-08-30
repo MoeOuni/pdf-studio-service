@@ -1,8 +1,8 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
 import { baseMiddleware } from '@/shared/middleware';
-import { authMiddleware } from '@/shared/auth/middleware';
+import { authMiddleware } from '@/shared/middleware';
 import { createSuccessResponse, createNotFoundResponse, createUnauthorizedResponse } from '@/shared/utils/response';
-import { TemplatesRepository } from '@/shared/database/dynamodb/templates-repository';
+import { TemplatesRepository } from '@/shared/database';
 
 /**
  * Get a template by ID

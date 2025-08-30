@@ -1,9 +1,9 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
 import { baseMiddleware } from '@/shared/middleware';
-import { authMiddleware } from '@/shared/auth/middleware';
+import { authMiddleware } from '@/shared/middleware';
 import { createSuccessResponse, createValidationErrorResponse, createNotFoundResponse } from '@/shared/utils/response';
 import { validateRequestBody, updateTemplateSchema } from '@/shared/utils/validation';
-import { TemplatesRepository } from '@/shared/database/dynamodb/templates-repository';
+import { TemplatesRepository } from '@/shared/database';
 
 /**
  * Update a template
@@ -32,8 +32,14 @@ const updateTemplateHandler = async (
   try {
     const templatesRepo = new TemplatesRepository();
     
-    // Update the template (repository will verify ownership)
-    const updatedTemplate = await templatesRepo.update(templateId, user.userId, updateData);
+    // Verify template exists and user has access
+    const existingTemplate = await templatesRepo.findByIdAndUserId(templateId, user.userId);
+    if (!existingTemplate) {
+      return createNotFoundResponse('Template');
+    }
+
+    // Update the template
+    const updatedTemplate = await templatesRepo.update(templateId, updateData);
     
     if (!updatedTemplate) {
       return createNotFoundResponse('Template');

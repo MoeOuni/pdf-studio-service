@@ -1,0 +1,166 @@
+Resources:
+  # AWS Cognito User Pool
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: ${self:service}-user-pool-${self:provider.stage}
+      AliasAttributes:
+        - email
+        - preferred_username
+      UsernameAttributes:
+        - email
+      AutoVerifiedAttributes:
+        - email
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireUppercase: true
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: false
+          TemporaryPasswordValidityDays: 7
+      Schema:
+        - AttributeDataType: String
+          Name: email
+          Required: true
+          Mutable: true
+        - AttributeDataType: String
+          Name: name
+          Required: false
+          Mutable: true
+        - AttributeDataType: String
+          Name: given_name
+          Required: false
+          Mutable: true
+        - AttributeDataType: String
+          Name: family_name
+          Required: false
+          Mutable: true
+      UserPoolTags:
+        Service: ${self:service}
+        Stage: ${self:provider.stage}
+        Environment: ${self:provider.stage}
+      EmailConfiguration:
+        EmailSendingAccount: COGNITO_DEFAULT
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: false
+        InviteMessageAction: SUPPRESS
+      DeviceConfiguration:
+        ChallengeRequiredOnNewDevice: false
+        DeviceOnlyRememberedOnUserPrompt: true
+      MfaConfiguration: 'OFF'
+      VerificationMessageTemplate:
+        DefaultEmailOption: CONFIRM_WITH_CODE
+        EmailMessage: 'Your verification code for PDF Studio is: {####}'
+        EmailSubject: 'PDF Studio - Email Verification'
+
+  # AWS Cognito User Pool Client
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: ${self:service}-client-${self:provider.stage}
+      UserPoolId: !Ref UserPool
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ADMIN_NO_SRP_AUTH
+        - USER_PASSWORD_AUTH
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+      SupportedIdentityProviders:
+        - COGNITO
+      CallbackURLs:
+        - http://localhost:5173
+        - https://pdf-studio.vercel.app
+      LogoutURLs:
+        - http://localhost:5173
+        - https://pdf-studio.vercel.app
+      AllowedOAuthFlows:
+        - code
+        - implicit
+      AllowedOAuthScopes:
+        - email
+        - openid
+        - profile
+      AllowedOAuthFlowsUserPoolClient: true
+      ReadAttributes:
+        - email
+        - email_verified
+        - name
+        - given_name
+        - family_name
+      WriteAttributes:
+        - email
+        - name
+        - given_name
+        - family_name
+      RefreshTokenValidity: 30
+      AccessTokenValidity: 24
+      IdTokenValidity: 24
+      TokenValidityUnits:
+        AccessToken: hours
+        IdToken: hours
+        RefreshToken: days
+      PreventUserExistenceErrors: ENABLED
+
+  # IAM Role for Cognito access in Lambda functions
+  CognitoAccessRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ${self:service}-cognito-access-${self:provider.stage}
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: CognitoAdminAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cognito-idp:AdminCreateUser
+                  - cognito-idp:AdminSetUserPassword
+                  - cognito-idp:AdminDeleteUser
+                  - cognito-idp:AdminGetUser
+                  - cognito-idp:AdminListGroupsForUser
+                  - cognito-idp:AdminAddUserToGroup
+                  - cognito-idp:AdminRemoveUserFromGroup
+                  - cognito-idp:ListUsers
+                  - cognito-idp:GetUser
+                  - cognito-idp:UpdateUserAttributes
+                  - cognito-idp:AdminUpdateUserAttributes
+                  - cognito-idp:AdminConfirmSignUp
+                  - cognito-idp:AdminDisableUser
+                  - cognito-idp:AdminEnableUser
+                  - cognito-idp:AdminInitiateAuth
+                  - cognito-idp:AdminRespondToAuthChallenge
+                  - cognito-idp:GetUserAttributeVerificationCode
+                  - cognito-idp:ConfirmForgotPassword
+                  - cognito-idp:ForgotPassword
+                Resource:
+                  - !GetAtt UserPool.Arn
+
+Outputs:
+  # User Pool outputs
+  UserPoolId:
+    Description: Cognito User Pool ID
+    Value: !Ref UserPool
+    Export:
+      Name: ${self:service}-${self:provider.stage}-UserPoolId
+      
+  UserPoolClientId:
+    Description: Cognito User Pool Client ID
+    Value: !Ref UserPoolClient
+    Export:
+      Name: ${self:service}-${self:provider.stage}-UserPoolClientId
+      
+  UserPoolArn:
+    Description: Cognito User Pool ARN
+    Value: !GetAtt UserPool.Arn
+    Export:
+      Name: ${self:service}-${self:provider.stage}-UserPoolArn

@@ -6,8 +6,7 @@
 import { PDFDocument, rgb, degrees } from 'pdf-lib';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { s3Client } from '@/shared/storage/s3-client';
-import { TemplatesRepository } from '@/shared/database/dynamodb/templates-repository';
-import { FieldsRepository } from '@/shared/database/dynamodb/fields-repository';
+import { TemplateRepository, FieldRepository } from '@/shared/database/repositories';
 import {
   PDFGenerationRequest,
   PDFGenerationOptions,
@@ -30,12 +29,12 @@ import {
 } from './utils';
 
 export class PDFGenerator {
-  private templatesRepo: TemplatesRepository;
-  private fieldsRepo: FieldsRepository;
+  private templatesRepo: TemplateRepository;
+  private fieldsRepo: FieldRepository;
 
   constructor() {
-    this.templatesRepo = new TemplatesRepository();
-    this.fieldsRepo = new FieldsRepository();
+    this.templatesRepo = new TemplateRepository();
+    this.fieldsRepo = new FieldRepository();
   }
 
   /**
@@ -197,8 +196,8 @@ export class PDFGenerator {
         pages: [
           {
             number: 1,
-            width: template.dimensions.width,
-            height: template.dimensions.height,
+            width: template.dimensions?.width || 612,
+            height: template.dimensions?.height || 792,
             orientation: 'portrait',
             margins: { top: 72, right: 72, bottom: 72, left: 72 },
           },
@@ -232,7 +231,7 @@ export class PDFGenerator {
   private async getTemplateFields(templateId: string): Promise<PDFFieldDefinition[]> {
     try {
       const fieldsResult = await this.fieldsRepo.findByTemplateId(templateId);
-      const fields = fieldsResult.items; // Extract items from paginated response
+      const fields = fieldsResult; // Direct array from new repository
       
       return fields.map((field: any) => ({
         id: field.id,

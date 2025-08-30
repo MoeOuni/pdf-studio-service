@@ -1,69 +1,74 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
-import { z } from 'zod';
 import { baseMiddleware } from '@/shared/middleware';
-import { createSuccessResponse, createValidationErrorResponse, createConflictResponse } from '@/shared/utils/response';
-import { registerSchema } from '@/shared/utils/validation';
-import { UsersRepository } from '@/shared/database';
-import { generateTokens } from '@/shared/auth/jwt';
+import { createSuccessResponse, createValidationErrorResponse, createConflictResponse, createInternalServerErrorResponse } from '@/shared/utils/response';
+import { cognitoAuth } from '@/shared/auth/cognito-auth';
+import { UserRepository } from '@/shared/database/repositories';
 
 /**
- * User registration endpoint
+ * User registration endpoint using AWS Cognito
  */
 const registerHandler = async (
   event: APIGatewayProxyEvent,
   _context: Context
 ): Promise<APIGatewayProxyResult> => {
-  // Validate request body (middy already parsed JSON)
   try {
-    const validatedData = registerSchema.parse(event.body);
-    const { email, password, name } = validatedData;
-
-    const usersRepo = new UsersRepository();
-    
-    // Check if user already exists
-    const existingUser = await usersRepo.findByEmail(email);
-    if (existingUser) {
-      return createConflictResponse('User with this email already exists');
+    // Parse request body
+    if (!event.body) {
+      return createValidationErrorResponse('Request body is required');
     }
 
-    // Create user with profile
-    const user = await usersRepo.create({
+    let requestData;
+    try {
+      requestData = JSON.parse(event.body);
+    } catch {
+      return createValidationErrorResponse('Invalid JSON in request body');
+    }
+
+    const { email, password, name } = requestData;
+
+    // Basic validation
+    if (!email || !password) {
+      return createValidationErrorResponse('Email and password are required');
+    }
+
+    if (password.length < 8) {
+      return createValidationErrorResponse('Password must be at least 8 characters long');
+    }
+
+    // Register user in Cognito
+    const cognitoUser = await cognitoAuth.registerUser({
       email,
       password,
       name,
     });
 
-    // Generate JWT tokens
-    const tokens = await generateTokens({
-      userId: user.id,
-      email: user.email,
-      name: user.name || undefined,
+    // Also store user in our DynamoDB for additional data
+    const userRepo = new UserRepository();
+    await userRepo.create({
+      email,
+      passwordHash: 'COGNITO_MANAGED', // Cognito manages passwords
+      name,
     });
 
-    // Prepare response data (exclude sensitive information)
-    const responseData = {
+    return createSuccessResponse({
       user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        emailVerified: user.emailVerified,
-        createdAt: user.createdAt,
-        // Note: Profile is separate in Drizzle schema
-        profile: null,
+        userId: cognitoUser.userId,
+        email: cognitoUser.email,
+        name: cognitoUser.name,
+        emailVerified: cognitoUser.emailVerified,
+        createdAt: cognitoUser.createdAt,
       },
-      tokens,
-    };
+      message: 'User registered successfully',
+    });
 
-    return createSuccessResponse(responseData, 'User registered successfully');
-  } catch (validationError) {
-    if (validationError instanceof z.ZodError) {
-      const errorMessages = validationError.errors.map(err =>
-        `${err.path.join('.')}: ${err.message}`
-      ).join(', ');
-      return createValidationErrorResponse(errorMessages);
+  } catch (error: any) {
+    console.error('Registration error:', error);
+    
+    if (error.message.includes('already exists')) {
+      return createConflictResponse('User with this email already exists');
     }
-    console.error('Registration error:', validationError);
-    throw validationError;
+    
+    return createInternalServerErrorResponse(`Registration failed: ${error.message}`);
   }
 };
 

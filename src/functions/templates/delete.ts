@@ -1,9 +1,8 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
 import { baseMiddleware } from '@/shared/middleware';
-import { authMiddleware } from '@/shared/auth/middleware';
+import { authMiddleware } from '@/shared/middleware';
 import { createSuccessResponse, createNotFoundResponse } from '@/shared/utils/response';
-import { TemplatesRepository } from '@/shared/database/dynamodb/templates-repository';
-import { FieldsRepository } from '@/shared/database/dynamodb/fields-repository';
+import { TemplatesRepository, FieldsRepository } from '@/shared/database';
 
 /**
  * Delete a template and all its fields
@@ -25,11 +24,17 @@ const deleteTemplateHandler = async (
     const templatesRepo = new TemplatesRepository();
     const fieldsRepo = new FieldsRepository();
     
-    // First, delete all fields associated with the template
-    const deletedFieldsCount = await fieldsRepo.deleteByTemplateId(templateId, user.userId);
+    // Verify template exists and user has access
+    const template = await templatesRepo.findByIdAndUserId(templateId, user.userId);
+    if (!template) {
+      return createNotFoundResponse('Template');
+    }
     
-    // Then delete the template (repository will verify ownership)
-    const deletedTemplate = await templatesRepo.delete(templateId, user.userId);
+    // First, delete all fields associated with the template
+    const deletedFieldsCount = await fieldsRepo.deleteByTemplateId(templateId);
+    
+    // Then delete the template
+    const deletedTemplate = await templatesRepo.delete(templateId);
     
     if (!deletedTemplate) {
       return createNotFoundResponse('Template');

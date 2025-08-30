@@ -1,6 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
 import { baseMiddleware } from '@/shared/middleware';
-import { authMiddleware } from '@/shared/auth/middleware';
+import { authMiddleware } from '@/shared/middleware';
 import { createSuccessResponse, createValidationErrorResponse, createNotFoundResponse } from '@/shared/utils/response';
 import { validateRequestBody, createTemplateSchema } from '@/shared/utils/validation';
 import { TemplatesRepository } from '@/shared/database';
@@ -42,12 +42,17 @@ const createTemplateHandler = async (
       userId: user.userId,
       name: templateData.name,
       description: templateData.description,
+      category: 'general', // Default category
       originalFileId: templateData.originalFileId,
       dimensions: templateData.dimensions,
       pageCount: templateData.pageCount,
       thumbnailUrl: templateData.thumbnailUrl,
       isPublic: templateData.isPublic,
       tags: templateData.tags,
+      templateData: {
+        pages: [], // Will be populated when fields are added
+        metadata: templateData.metadata || {},
+      },
       metadata: {
         fileSize: Number(uploadedFile.fileSize),
         mimeType: uploadedFile.mimeType || 'application/pdf',

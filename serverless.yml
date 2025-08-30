@@ -1,8 +1,3 @@
-# "org" ensures this Service is used with the correct Serverless Framework Access Key.
-org: ounitek
-# "app" enables Serverless Framework Dashboard features and sharing them with other Services.
-app: pdf-studio-service
-# "service" is the name of this project. This will also be added to your AWS resource names.
 service: pdf-studio-api
 
 frameworkVersion: '3'
@@ -18,27 +13,20 @@ provider:
   environment:
     STAGE: ${self:provider.stage}
     REGION: ${self:provider.region}
+    SERVICE_NAME: ${self:service}
     
     # DynamoDB
-    DYNAMODB_TABLE: ${self:service}-${self:provider.stage}
-    
-    # PostgreSQL (RDS)
-    DATABASE_URL: 
-      Fn::Sub: 
-        - postgresql://${Username}:${Password}@${Endpoint}:5432/${DatabaseName}?schema=public
-        - Username: ${self:custom.database.username}
-          Password: ${self:custom.database.password}
-          Endpoint: !GetAtt PostgreSQLInstance.Endpoint.Address
-          DatabaseName: ${self:custom.database.name}
-    DB_NAME: ${self:custom.database.name}
-    DB_USER: ${self:custom.database.username}
-    DB_PASSWORD: ${self:custom.database.password}
+    DYNAMODB_TABLE: ${self:service}-main-${self:provider.stage}
     
     # S3
-    S3_BUCKET: ${self:service}-${self:provider.stage}
+    S3_BUCKET: ${self:service}-files-${self:provider.stage}-${self:provider.region}
+    
+    # AWS Cognito
+    COGNITO_USER_POOL_ID: !Ref UserPool
+    COGNITO_USER_POOL_CLIENT_ID: !Ref UserPoolClient
     
   # Global function defaults
-  timeout: 30
+  timeout: 25
   memorySize: 256
   
   # Tracing and monitoring
@@ -50,6 +38,26 @@ provider:
   logs:
     httpApi: true
     
+  # HTTP API CORS configuration
+  httpApi:
+    cors:
+      allowedOrigins:
+        - http://localhost:5173  # Vite dev server
+        - https://pdf-studio.vercel.app
+      allowedHeaders:
+        - Content-Type
+        - Authorization
+        - X-Requested-With
+        - Accept
+        - Origin
+      allowedMethods:
+        - GET
+        - POST
+        - PUT
+        - DELETE
+        - OPTIONS
+      allowCredentials: true
+    
   # IAM permissions - imported from separate file
   iam:
     role:
@@ -59,7 +67,6 @@ provider:
 plugins:
   - serverless-esbuild
   - serverless-offline
-  - serverless-dynamodb
 
 # Package configuration
 package:
@@ -68,26 +75,9 @@ package:
 
 # Custom configuration
 custom:
-  # Database configuration per stage
-  database:
-    name: pdf_studio_${self:provider.stage}
-    username: pdf_studio_user
-    password: ${env:DB_PASSWORD, 'changeme123!'}
-  
-  # VPC configuration - you can customize per environment
-  vpc:
-    dev: vpc-0c9ea7b37f96a8092      # Default VPC for dev (working)
-    staging: vpc-0c9ea7b37f96a8092   # Change this when you have staging VPC
-    prod: vpc-0c9ea7b37f96a8092      # Change this when you have production VPC
-    
-  # Database configuration per stage
-  databaseUrl:
-    dev: postgresql://${self:custom.database.username}:${self:custom.database.password}@${env:RDS_ENDPOINT, 'localhost'}:5432/${self:custom.database.name}?schema=public
-    staging: postgresql://${self:custom.database.username}:${self:custom.database.password}@${env:RDS_ENDPOINT, 'localhost'}:5432/${self:custom.database.name}?schema=public
-    prod: postgresql://${self:custom.database.username}:${self:custom.database.password}@${env:RDS_ENDPOINT, 'localhost'}:5432/${self:custom.database.name}?schema=public
-  
-  # Deployment bucket for layers
-  deploymentBucket: ${self:service}-deployments-${self:provider.stage}
+  # Disable Serverless Framework Observability instrumentation
+  serverlessFrameworkObservability:
+    enabled: false
   
   # ESBuild configuration for TypeScript compilation
   esbuild:
@@ -110,8 +100,8 @@ custom:
       '.html': 'text'
     platform: 'node'
     concurrency: 10
-    keepNames: true  # Keep function names for debugging
-    treeShaking: false  # Disable for compatibility
+    keepNames: true
+    treeShaking: false
     format: 'cjs'
     mainFields: ['main', 'module']
     conditions: ['node']
@@ -122,31 +112,17 @@ custom:
     babelOptions:
       presets: ["env"]
     printOutput: true
-    
-  # DynamoDB local configuration
-  dynamodb:
-    start:
-      port: 8000
-      inMemory: true
-      migrate: true
-    stages:
-      - dev
 
-# Functions - imported from modular configurations
-# Individual function configurations are maintained in their respective module folders
-# The functions.js file is compiled from functions.ts with full TypeScript support
-functions: ${file(infrastructure/functions.js)}
+# Functions configuration
+functions: ${file(infrastructure/functions.yml):functions}
 
 # Import resources from separate files
 resources:
-  # PostgreSQL RDS
-  - ${file(infrastructure/resources/rds.yml)}
-  
   # DynamoDB resources
   - ${file(infrastructure/resources/dynamodb.yml)}
   
   # S3 resources
   - ${file(infrastructure/resources/s3.yml)}
   
-  # Lambda layers (commented out for now)
-  # - ${file(infrastructure/layers/shared-layer.yml)}
+  # AWS Cognito resources
+  - ${file(infrastructure/resources/cognito.yml)}

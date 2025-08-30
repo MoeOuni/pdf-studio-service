@@ -2,8 +2,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda
 import { baseMiddleware, authMiddleware } from '@/shared/middleware';
 import { createSuccessResponse, createNotFoundResponse, createValidationErrorResponse } from '@/shared/utils/response';
 import { validatePathParameters } from '@/shared/utils/validation';
-import { FieldsRepository } from '@/shared/database/dynamodb/fields-repository';
-import { TemplatesRepository } from '@/shared/database/dynamodb/templates-repository';
+import { FieldsRepository, TemplatesRepository, Field } from '@/shared/database';
 
 /**
  * Get template fields
@@ -26,65 +25,49 @@ const getFieldsHandler = async (
   // Parse query parameters
   const page = event.queryStringParameters?.['page'] ? parseInt(event.queryStringParameters['page'], 10) : undefined;
   const limit = parseInt(event.queryStringParameters?.['limit'] || '50', 10);
-
-  // Handle pagination cursor
-  let lastEvaluatedKey: Record<string, any> | undefined;
   const cursor = event.queryStringParameters?.['cursor'];
-  if (cursor) {
-    try {
-      lastEvaluatedKey = JSON.parse(Buffer.from(cursor, 'base64').toString());
-    } catch (error) {
-      // Invalid cursor, ignore it
-    }
-  }
 
   try {
-    // Verify template exists and user has access
     const templatesRepo = new TemplatesRepository();
-    const hasAccess = await templatesRepo.hasAccess(templateId, user.userId);
+    const fieldsRepo = new FieldsRepository();
 
+    // Verify user has access to the template (owns it or it's public)
+    const hasAccess = await templatesRepo.hasAccess(templateId, user.userId);
     if (!hasAccess) {
       return createNotFoundResponse('Template');
     }
 
-    const fieldsRepo = new FieldsRepository();
-    let result;
+    let fields: Field[];
 
     if (page !== undefined) {
       // Get fields for specific page
-      const fields = await fieldsRepo.findByTemplateIdAndPage(templateId, page);
-      result = {
-        items: fields,
-        count: fields.length,
-        hasMore: false,
-        lastEvaluatedKey: undefined,
-      };
+      fields = await fieldsRepo.findByTemplateIdAndPage(templateId, page);
     } else {
-      // Get all fields for template with pagination
-      result = await fieldsRepo.findByTemplateId(templateId, {
-        limit,
-        lastEvaluatedKey,
-      });
+      // Get all fields for template
+      fields = await fieldsRepo.findByTemplateId(templateId);
+      
+      // Apply client-side pagination if requested
+      if (limit && fields.length > limit) {
+        const startIndex = cursor ? parseInt(cursor, 10) : 0;
+        fields = fields.slice(startIndex, startIndex + limit);
+      }
     }
 
-    // Encode the cursor for next page
-    let nextCursor: string | undefined;
-    if (result.lastEvaluatedKey) {
-      nextCursor = Buffer.from(JSON.stringify(result.lastEvaluatedKey)).toString('base64');
-    }
+    // Simple pagination response
+    const hasMore = limit ? fields.length === limit : false;
+    const nextCursor = hasMore ? String(fields.length) : undefined;
 
     return createSuccessResponse({
-      fields: result.items,
+      fields: fields,
       pagination: {
-        count: result.count,
-        hasMore: result.hasMore,
+        count: fields.length,
+        hasMore,
         nextCursor,
       },
-    }, 'Fields retrieved successfully');
-
+    });
   } catch (error) {
-    console.error('Get fields error:', error);
-    throw error;
+    console.error('Error getting fields:', error);
+    return createNotFoundResponse('Failed to retrieve fields');
   }
 };
 

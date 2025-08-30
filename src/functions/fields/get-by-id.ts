@@ -2,7 +2,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda
 import { baseMiddleware, authMiddleware } from '@/shared/middleware';
 import { createSuccessResponse, createNotFoundResponse, createValidationErrorResponse } from '@/shared/utils/response';
 import { validatePathParameters } from '@/shared/utils/validation';
-import { FieldsRepository } from '@/shared/database/dynamodb/fields-repository';
+import { FieldsRepository } from '@/shared/database';
 
 /**
  * Get a specific field by ID

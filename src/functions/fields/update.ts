@@ -2,7 +2,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda
 import { baseMiddleware, authMiddleware } from '@/shared/middleware';
 import { createSuccessResponse, createNotFoundResponse, createValidationErrorResponse } from '@/shared/utils/response';
 import { validateRequestBody, validatePathParameters, updateFieldSchema } from '@/shared/utils/validation';
-import { FieldsRepository } from '@/shared/database/dynamodb/fields-repository';
+import { FieldsRepository } from '@/shared/database';
 
 /**
  * Update a template field
@@ -33,8 +33,29 @@ const updateFieldHandler = async (
   try {
     const fieldsRepo = new FieldsRepository();
 
-    // Update the field (repository will verify ownership)
-    const updatedField = await fieldsRepo.update(fieldId, user.userId, updateData);
+    // Verify field exists and user has access
+    const existingField = await fieldsRepo.findByIdAndUserId(fieldId, user.userId);
+    if (!existingField) {
+      return createNotFoundResponse('Field');
+    }
+
+    // Transform updateData to match entity structure
+    const transformedUpdateData: any = { ...updateData };
+    
+    // If position and size are provided separately, combine them
+    if (updateData.position && updateData.size) {
+      transformedUpdateData.position = {
+        x: updateData.position.x,
+        y: updateData.position.y,
+        width: updateData.size.width,
+        height: updateData.size.height,
+        page: existingField.position.page, // Keep existing page
+      };
+      delete transformedUpdateData.size; // Remove size as it's now in position
+    }
+
+    // Update the field
+    const updatedField = await fieldsRepo.update(fieldId, transformedUpdateData);
     
     if (!updatedField) {
       return createNotFoundResponse('Field');
