@@ -177,12 +177,6 @@ serverless logs -f register --tail --stage dev
 
 ## 🔧 Development
 
-### Local Development
-```bash
-# Start serverless offline (requires DynamoDB local)
-npm run dev
-```
-
 ### Code Quality
 ```bash
 # Run linting

@@ -66,7 +66,6 @@ provider:
 # Plugins
 plugins:
   - serverless-esbuild
-  - serverless-offline
 
 # Package configuration
 package:
@@ -105,13 +104,6 @@ custom:
     format: 'cjs'
     mainFields: ['main', 'module']
     conditions: ['node']
-    
-  # Serverless offline configuration for local development
-  serverless-offline:
-    httpPort: 3000
-    babelOptions:
-      presets: ["env"]
-    printOutput: true
 
 # Functions configuration
 functions: ${file(infrastructure/functions.yml):functions}

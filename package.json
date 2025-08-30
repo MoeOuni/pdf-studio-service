@@ -4,7 +4,6 @@
   "description": "PDF Studio Serverless API with AWS Lambda, DynamoDB, and S3",
   "main": "handler.js",
   "scripts": {
-    "dev": "serverless offline",
     "deploy": "serverless deploy",
     "deploy:dev": "serverless deploy --stage dev",
     "deploy:staging": "serverless deploy --stage staging",
@@ -53,7 +52,6 @@
     "js-yaml": "^4.1.0",
     "serverless": "^3.38.0",
     "serverless-esbuild": "^1.50.0",
-    "serverless-offline": "^13.3.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
   },
