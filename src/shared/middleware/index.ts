@@ -49,15 +49,41 @@ export const authMiddleware = {
 
       const token = authHeader.substring(7); // Remove 'Bearer ' prefix
 
-      // Import Cognito auth service
+      // Import Cognito auth service and user repository
       const { CognitoAuthService } = await import('@/shared/auth/cognito-auth');
+      const { UsersRepository } = await import('@/shared/database');
+      
       const cognitoAuth = new CognitoAuthService();
+      const usersRepo = new UsersRepository();
 
-      // Verify the Cognito access token
-      const user = await cognitoAuth.verifyToken(token);
+      // Verify the Cognito access token and get Cognito user
+      const cognitoUser = await cognitoAuth.verifyToken(token);
 
-      // Add user to context for use in handlers
-      (request.context as any).user = user;
+      // Find or create user in DynamoDB using Cognito email
+      let dbUser = await usersRepo.findByEmail(cognitoUser.email);
+      
+      if (!dbUser) {
+        // Lazy creation: Create user in DynamoDB if they don't exist
+        console.log('Creating DynamoDB user for Cognito user:', cognitoUser.email);
+        dbUser = await usersRepo.create({
+          email: cognitoUser.email,
+          passwordHash: 'COGNITO_MANAGED',
+          name: cognitoUser.name || cognitoUser.email.split('@')[0],
+        });
+      }
+
+      // Add both Cognito and DynamoDB user to context
+      (request.context as any).user = {
+        // DynamoDB user (for backward compatibility)
+        userId: dbUser.id,
+        id: dbUser.id,
+        email: dbUser.email,
+        name: dbUser.name,
+        emailVerified: dbUser.emailVerified,
+        // Cognito user data (for reference)
+        cognitoUserId: cognitoUser.userId,
+        cognitoData: cognitoUser,
+      };
     } catch (error) {
       console.error('Authentication error:', error);
       throw new Error('Invalid or expired token');

@@ -72,17 +72,7 @@ export const fieldValidationSchema = z.object({
   errorMessage: z.string(),
 }).partial();
 
-// Authentication schemas
-export const loginSchema = z.object({
-  email: emailSchema,
-  password: z.string().min(1, 'Password is required'),
-});
-
-export const registerSchema = z.object({
-  email: emailSchema,
-  password: passwordSchema,
-  name: z.string().min(1, 'Name is required').optional(),
-});
+// Authentication schemas removed - using pure Cognito authentication
 
 // File upload schemas
 export const uploadRequestSchema = z.object({

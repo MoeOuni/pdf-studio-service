@@ -9,26 +9,8 @@ health:
         path: /health
         method: get
 
-# Authentication Functions
-login:
-  handler: src/functions/auth/login.main
-  description: 'User login with AWS Cognito'
-  timeout: 15
-  memorySize: 256
-  events:
-    - httpApi:
-        path: /auth/login
-        method: post
-
-register:
-  handler: src/functions/auth/register.main
-  description: 'User registration with AWS Cognito'
-  timeout: 15
-  memorySize: 256
-  events:
-    - httpApi:
-        path: /auth/register
-        method: post
+# Authentication Functions - All removed, using Pure Cognito
+# No backend auth endpoints needed with pure Cognito authentication
 
 # Template Functions
 createTemplate:
