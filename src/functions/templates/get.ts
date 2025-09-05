@@ -5,7 +5,7 @@ import { createSuccessResponse, createNotFoundResponse, createUnauthorizedRespon
 import { TemplatesRepository } from '@/shared/database';
 
 /**
- * Get a template by ID
+ * Get a template by ID or list all templates
  */
 const getTemplateHandler = async (
   event: APIGatewayProxyEvent,
@@ -14,31 +14,48 @@ const getTemplateHandler = async (
   // Get authenticated user from context (added by authMiddleware)
   const user = (context as any).user;
 
-  // Validate path parameters
   const templateId = event.pathParameters?.['templateId'];
-  if (!templateId) {
-    return createNotFoundResponse('Template');
-  }
 
   try {
     const templatesRepo = new TemplatesRepository();
     
-    // Get the template
-    const template = await templatesRepo.findById(templateId);
-    if (!template) {
-      return createNotFoundResponse('Template');
-    }
+    // If templateId is provided, get single template
+    if (templateId) {
+      // Get the template
+      const template = await templatesRepo.findById(templateId);
+      if (!template) {
+        return createNotFoundResponse('Template');
+      }
 
-    // Check if user has access (owns template or it's public)
-    const hasAccess = await templatesRepo.hasAccess(templateId, user.userId);
-    if (!hasAccess) {
-      return createUnauthorizedResponse('Access denied to this template');
-    }
+      // Check if user has access (owns template or it's public)
+      const hasAccess = await templatesRepo.hasAccess(templateId, user.userId);
+      if (!hasAccess) {
+        return createUnauthorizedResponse('Access denied to this template');
+      }
 
-    return createSuccessResponse(template, 'Template retrieved successfully');
+      return createSuccessResponse(template, 'Template retrieved successfully');
+    } 
+    // Otherwise, list all templates for the user
+    else {
+      // Parse query parameters for pagination (future enhancement)
+      const limit = event.queryStringParameters?.['limit'] ? parseInt(event.queryStringParameters['limit'], 10) : 10;
+
+      // Get templates for the user
+      const templates = await templatesRepo.findByUserId(user.userId);
+      
+      // Apply limit if specified
+      const limitedTemplates = limit ? templates.slice(0, limit) : templates;
+      
+      // Always return 200 with data (even if empty array)
+      return createSuccessResponse({
+        templates: limitedTemplates,
+        total: templates.length,
+        count: limitedTemplates.length
+      }, 'Templates retrieved successfully');
+    }
 
   } catch (error) {
-    console.error('Get template error:', error);
+    console.error('Get template(s) error:', error);
     throw error;
   }
 };
