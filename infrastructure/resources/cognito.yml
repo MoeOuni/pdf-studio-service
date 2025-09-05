@@ -39,6 +39,9 @@ Resources:
         Environment: ${self:provider.stage}
       EmailConfiguration:
         EmailSendingAccount: COGNITO_DEFAULT
+        # Note: For production, consider using SES with a custom FROM address
+        # EmailSendingAccount: DEVELOPER
+        # SourceArn: arn:aws:ses:region:account:identity/your-email@domain.com
       AdminCreateUserConfig:
         AllowAdminCreateUserOnly: false
       DeviceConfiguration:
@@ -47,8 +50,53 @@ Resources:
       MfaConfiguration: 'OFF'
       VerificationMessageTemplate:
         DefaultEmailOption: CONFIRM_WITH_CODE
-        EmailMessage: 'Your verification code for PDF Studio is: {####}'
-        EmailSubject: 'PDF Studio - Email Verification'
+        EmailMessage: |
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              body{font-family:'Segoe UI',sans-serif;margin:0;padding:0;background:#f5f5f5}
+              .container{max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.1)}
+              .header{background:linear-gradient(135deg,#00bc7d 0%,#00a36c 100%);padding:40px 30px;text-align:center;color:#fff}
+              .logo-img{height:50px;margin-bottom:15px}
+              .logo-text{font-size:28px;font-weight:bold;margin-bottom:10px}
+              .subtitle{opacity:0.9;font-size:16px}
+              .content{padding:40px 30px;text-align:center}
+              .greeting{font-size:24px;color:#333;margin-bottom:20px;font-weight:600}
+              .message{font-size:16px;color:#666;line-height:1.7;margin-bottom:30px}
+              .code-box{background:linear-gradient(135deg,#00bc7d 0%,#00a36c 100%);padding:30px;border-radius:12px;text-align:center;margin:30px 0}
+              .code-label{color:rgba(255,255,255,0.9);font-size:14px;margin-bottom:15px;text-transform:uppercase;letter-spacing:1px}
+              .code{font-size:32px;font-weight:bold;color:#fff;letter-spacing:8px;font-family:monospace}
+              .expiry{color:rgba(255,255,255,0.8);font-size:14px;margin-top:15px}
+              .footer{background:#f8f9fa;padding:30px;text-align:center;color:#666;font-size:14px}
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <!-- TiraLine brand logo -->
+                <div class="logo-text">🎯 TiraLine PDF Studio</div>
+                <div class="subtitle">Professional PDF Template Management</div>
+              </div>
+              <div class="content">
+                <h1 class="greeting">Welcome! Please verify your email</h1>
+                <p class="message">Thank you for signing up! To complete your registration and start using our platform, please verify your email address using the code below.</p>
+                <div class="code-box">
+                  <div class="code-label">Your Verification Code</div>
+                  <div class="code">{####}</div>
+                  <div class="expiry">⏰ This code expires in 24 hours</div>
+                </div>
+                <p class="message">Simply enter this code in the verification form to activate your account.</p>
+              </div>
+              <div class="footer">
+                <strong>TiraLine PDF Studio</strong><br>
+                Professional PDF Template Management Platform<br>
+                © 2025 TiraLine. All rights reserved.
+              </div>
+            </div>
+          </body>
+          </html>
+        EmailSubject: '🎯 TiraLine PDF Studio - Verify Your Email'
 
   # AWS Cognito User Pool Client
   UserPoolClient:
